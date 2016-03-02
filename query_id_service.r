@@ -52,6 +52,7 @@ add_chunk <- function(my_host, my_limit, joined_aliases, debug=FALSE){
 # bit of code uses the function above to get all ark aliases
 my_limit= "100"
 my_start= ""
+my_host="https://signpost.opensciencedatacloud.org/alias/"
 first_chunk_url = paste(my_host, "?", "limit=", my_limit, sep="", collapse="")
 first_chunk_json <- fromJSON(first_chunk_url)
 joined_aliases <- unique(first_chunk_json$aliases)
@@ -83,7 +84,7 @@ for (i in 1:length(joined_aliases)){
   my_urls <- my_json$urls
   num_urls <- length(my_urls)
   if( num_urls > 0 ){
-    line_out <- paste( c(my_json$name, length(my_json$hashes), my_json$hashes[1], length(my_json$urls), my_json$urls), collapse="\t")
+    line_out <- paste( c(my_json$name, length(my_json$hashes), my_json$hashes, length(my_json$urls), my_json$urls), collapse="\t")
     #print(line_out)
     write(line_out, file=my_file, append=TRUE)
     print(i)
