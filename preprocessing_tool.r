@@ -39,9 +39,9 @@ preprocessing_tool <- function(
     if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ biocLite("preprocessCore") }
     if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ biocLite("DESeq") }
     # (DESeq): www.ncbi.nlm.nih.gov/pubmed/20979621
-    library(preprocessCore)
-    library(DESeq)
-    library(RColorBrewer)
+    #library(preprocessCore)
+    #library(DESeq)
+    #library(RColorBrewer)
     ###### MAIN
     
     # get the name of the data object if an object is used -- use the filename if input is filename string
