@@ -32,16 +32,16 @@ preprocessing_tool <- function(
     #require(matR) || install.packages("matR", repo="http://mcs.anl.gov/~braithwaite/R", type="source")
     #chooseCRANmirror()
     setRepositories(ind=1:8)
-    source("http://bioconductor.org/biocLite.R")
+    #####source("http://bioconductor.org/biocLite.R")
     #require(preprocessCore) || install.packages("preprocessCore")
     #require(DESeq) || biocLite("DESeq") # update to DESeq2 when I have a chance
-    if ( is.element("RColorBrewer", installed.packages()[,1]) == FALSE ){ install.packages("RColorBrewer") }
-    if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ biocLite("preprocessCore") }
-    if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ biocLite("DESeq") }
+    #####if ( is.element("RColorBrewer", installed.packages()[,1]) == FALSE ){ install.packages("RColorBrewer") }
+    #####if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ biocLite("preprocessCore") }
+    #####if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ biocLite("DESeq") }
     # (DESeq): www.ncbi.nlm.nih.gov/pubmed/20979621
-    #library(preprocessCore)
-    #library(DESeq)
-    #library(RColorBrewer)
+    #####library(preprocessCore)
+    ######library(DESeq)
+    ######library(RColorBrewer)
     ###### MAIN
     
     # get the name of the data object if an object is used -- use the filename if input is filename string
