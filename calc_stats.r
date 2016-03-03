@@ -12,8 +12,14 @@ calc_stats <<- function(
 {
 
 # tests ("Kruskal-Wallis", )
-  
-  require(matR)
+  if ( is.element("matR", installed.packages()[,1]) == FALSE ){
+      install.packages("devtools")
+      library(devtools)
+      install_github(repo="MG-RAST/matR", dependencies=FALSE, ref="early-release")
+      library(matR)
+      dependencies()
+  }
+  library(matR)
 
   # read in the abundance data
   if( identical(input_type,"file") ){
