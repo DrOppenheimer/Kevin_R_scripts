@@ -130,7 +130,7 @@ calc_stats <<- function(
   
   # create name for the output file
   if ( identical(file_out, "default") ){
-      if is.na(colnames(metadata_matrix)[metadata_column]){
+      if ( is.na(colnames(metadata_matrix)[metadata_column]) == TRUE ){
           file_out = paste(data_table, ".", stat_test, ".", metadata_column, ".STATS_RESULTS.txt", sep="", collapse="")
       }else{
           file_out = paste(data_table, ".", stat_test, ".", colnames(metadata_matrix)[metadata_column], ".STATS_RESULTS.txt", sep="", collapse="")
