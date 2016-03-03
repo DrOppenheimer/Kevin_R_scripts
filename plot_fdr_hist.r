@@ -1,4 +1,4 @@
-fdr_hist <<- function(stats_matrix, num_bins=20, figure_width = 11, figure_height = 8.5, line_position=0.05){
+plot_fdr_hist <<- function(stats_matrix, num_bins=20, figure_width = 11, figure_height = 8.5, line_position=0.05){
 
     if ( is.element("GLDEX", installed.packages()[,1]) == FALSE ){ install.packages("GLDEX") }    
     library(GLDEX)
