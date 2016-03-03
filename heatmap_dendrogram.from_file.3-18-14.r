@@ -1,6 +1,6 @@
 # Majority of this code is adapted from heatmap.2{gplots}
 
-heatmap_dendrogram <- function (
+heatmap_dendrogram.from_file <- function (
 
                                           file_in,
                                           file_type="file",
@@ -156,152 +156,6 @@ heatmap_dendrogram <- function (
   library(matlab)
   library(gtools) # for the invalid function
 
-######################
-# SUB( ): Function to load the metadata/ generate or import colors for the points
-######################
-load_metadata <- function(metadata_table, metadata_column){
-
-  metadata_matrix <- as.matrix( # Import metadata table, use it to generate colors
-                               read.table(
-                                          file=metadata_table,row.names=1,header=TRUE,sep="\t",
-                                          colClasses = "character", check.names=FALSE,
-                                          comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
-                                          )
-                               )
-
-  # make sure that the color matrix is sorted (ROWWISE) by id
-  # metadata_matrix <- metadata_matrix[order(rownames(metadata_matrix)),]
-  color_matrix <- create_colors(metadata_matrix, color_mode = "auto")
-  ncol.color_matrix <- ncol(color_matrix)
-  
-  metadata_factors <- as.factor(metadata_matrix[,metadata_column])
-  metadata_levels <- levels(as.factor(metadata_matrix[,metadata_column]))
-  num_levels <- length(metadata_levels)
-  color_levels <- col.wheel(num_levels)
-  all_colors <- color_matrix[,metadata_column]
-
-  return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=all_colors) )
-  
-  
-}
-######################
-######################
-######################
-# SUB(4): Sub to provide scaling for title and legened cex
-######################
-calculate_cex <- function(my_labels, my_pin, my_mai, reduce_by=0.30, debug){
-  
-  # get figure width and height from pin
-  my_width <- my_pin[1]
-  my_height <- my_pin[2] 
-  # get margine from mai
-  my_margin_bottom <- my_mai[1]
-  my_margin_left <- my_mai[2]
-  my_margin_top <- my_mai[3]
-  my_margin_right <- my_mai[4]
-  # find the longest label (in inches), and figure out the maximum amount of length scaling that is possible
-  label_width_max <- 0
-  for (i in 1:length(my_labels)){  
-    label_width <- strwidth(my_labels[i],'inches')
-    if ( label_width > label_width_max){ label_width_max<-label_width  }
-  }
-  label_width_scale_max <- ( my_width - ( my_margin_right + my_margin_left ) )/label_width_max
-  # find the number of labels, and figure out the maximum height scaling that is possible
-  label_height_max <- 0
-  for (i in 1:length(my_labels)){  
-    label_height <- strheight(my_labels[i],'inches')
-    if ( label_height > label_height_max){ label_height_max<-label_height  }
-  }
-  adjusted.label_height_max <- ( label_height_max + label_height_max*0.4 ) # fudge factor for vertical space between legend entries
-  label_height_scale_max <- ( my_height - ( my_margin_top + my_margin_bottom ) ) / ( adjusted.label_height_max*length(my_labels) )
-  # max possible scale is the smaller of the two 
-  scale_max <- min(label_width_scale_max, label_height_scale_max)
-  # adjust by buffer
-  #scale_max <- scale_max*(100-buffer/100) 
-  adjusted_scale_max <- ( scale_max * (1-reduce_by) )
-  #if(debug==TRUE){ print(cat("\n", "adjusted_scale_max: ", adjusted_scale_max, "\n", sep=""))  }
-  return(adjusted_scale_max)
-  
-}
-
-
-######################
-# SUB(6): Create optimal contrast color selection using a color wheel
-# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html 
-######################
-col.wheel <- function(num_col, my_cex=0.75) {
-  cols <- rainbow(num_col)
-  col_names <- vector(mode="list", length=num_col)
-  for (i in 1:num_col){
-    col_names[i] <- getColorTable(cols[i])
-  }
-  cols
-}
-######################
-######################
-
-
-######################
-# SUB(7): The inverse function to col2rgb()
-# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html
-######################
-rgb2col <- function(rgb) {
-  rgb <- as.integer(rgb)
-  class(rgb) <- "hexmode"
-  rgb <- as.character(rgb)
-  rgb <- matrix(rgb, nrow=3)
-  paste("#", apply(rgb, MARGIN=2, FUN=paste, collapse=""), sep="")
-}
-######################
-######################
-
-  
-######################
-# SUB(8): Convert all colors into format "#rrggbb"
-# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html
-######################
-getColorTable <- function(col) {
-  rgb <- col2rgb(col);
-  col <- rgb2col(rgb);
-  sort(unique(col))
-}
-######################
-######################
-
-
-######################
-# SUB(9): Automtically generate colors from metadata with identical text or values
-######################
-create_colors <- function(color_matrix, color_mode = "auto"){ # function to     
-  my_data.color <- data.frame(color_matrix)
-  ids <- rownames(color_matrix)
-  color_categories <- colnames(color_matrix)
-  for ( i in 1:dim(color_matrix)[2] ){
-    column_factors <- as.factor(color_matrix[,i])
-    column_levels <- levels(as.factor(color_matrix[,i]))
-    num_levels <- length(column_levels)
-    color_levels <- col.wheel(num_levels)
-    levels(column_factors) <- color_levels
-    my_data.color[,i]<-as.character(column_factors)
-  }
-  return(my_data.color)
-}
-######################
-######################
-
-
-######################
-# SUB(5): Fetch par values of the current frame - use to scale cex
-######################
-par_fetch <- function(){
-    my_pin<-par('pin')
-    my_mai<-par('mai')
-    my_mar<-par('mar')
-    return(list("my_pin"=my_pin, "my_mai"=my_mai, "my_mar"=my_mar))    
-}
-######################
-######################
-  
 ###### sub to import the input_file
 #import_data <- function(file_name)
   if( identical(file_type, "file") ){
@@ -313,12 +167,11 @@ par_fetch <- function(){
   }
 
 
-
 # Import metadata, and use to generate color bar for the columns
   if ( identical( is.na(metadata_table), FALSE )==TRUE ) {
 
     my_colors <- load_metadata(metadata_table, metadata_column)
-    # return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=all_colors) )
+
     metadata_levels <- my_colors$metadata_levels
     color_levels <- my_colors$color_levels
     ColSideColors <- my_colors$all_colors
@@ -327,7 +180,7 @@ par_fetch <- function(){
     plot.new()
     legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=2)
     dev.off()
-    return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=ColSideColors) )
+    # return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=all_colors) )
   }
 
   
@@ -698,39 +551,28 @@ par_fetch <- function(){
          col = notecol, cex = notecex)
   par(mar = c(margins[1], 0, 0, 0))
 
-  ##column_levels <- levels(as.factor(as.matrix(metadata_column))) 
-  ##metadata_levels <- my_colors$metadata_levels
-  ##color_levels <- my_colors$color_levels
-  ##ColSideColors <- my_colors$all_colors
 
-  
   # plot the horizontal dendrogram ?
   if (dendrogram %in% c("both", "row")) {
-      
-      if( identical( is.na(metadata_table), FALSE )==TRUE ){
-          plot.new()
-          #return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=all_colors) )
-          #column_levels <- levels(as.factor(metadata_table[,metadata_column]))
-          legend_par <- par_fetch() # <- new 2-3-16
-          legend_cex <- calculate_cex(my_labels=metadata_levels, legend_par$my_pin, legend_par$my_mai, reduce_by=0.40) # <- new 2-3-16
-          legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=legend_cex) # edit 2-3-16 -- add legend_cex for cex value
-      }else{
-          plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none")
-      }
-      
-  }else{ # <- added "{" 2-3-16
-      
-      if( identical( is.na(metadata_table), FALSE )==TRUE ){
-          plot.new()
-          legend_par <- par_fetch() # <- new 2-3-16
-          legend_cex <- calculate_cex(my_labels=metadata_levels, legend_par$my_pin, legend_par$my_mai, reduce_by=0.40) # <- new 2-3-16
-          legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=legend_cex) # edit 2-3-16 -- add legend_cex for cex value
-          legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=legend_cex)
-      }else{
-          plot.new() # empty plot if "both or "row" are not chosen
-      }
-  } # <- added "}" 2-3-16
-  par(mar = c(0, 0, if (!is.null(main)) 5 else 0, margins[2])) # <- column moved after placement of missing {} aboove
+
+    if( identical( is.na(metadata_table), FALSE )==TRUE ){
+      plot.new()
+      legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=legend_cex)
+    }else{
+      plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none")
+    }
+
+  }
+  else
+
+    if( identical( is.na(metadata_table), FALSE )==TRUE ){
+      plot.new()
+      legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=legend_cex)
+    }else{
+      plot.new() # empty plot if "both or "row" are not chosen
+    }
+
+  par(mar = c(0, 0, if (!is.null(main)) 5 else 0, margins[2]))
   ##############################################################
   
   # plot the vertical dendrogram?
@@ -864,7 +706,100 @@ par_fetch <- function(){
 
 
 
+######################
+# SUB( ): Function to load the metadata/ generate or import colors for the points
+######################
+load_metadata <- function(metadata_table, metadata_column){
 
+  metadata_matrix <- as.matrix( # Import metadata table, use it to generate colors
+                               read.table(
+                                          file=metadata_table,row.names=1,header=TRUE,sep="\t",
+                                          colClasses = "character", check.names=FALSE,
+                                          comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+                                          )
+                               )
+
+  # make sure that the color matrix is sorted (ROWWISE) by id
+  # metadata_matrix <- metadata_matrix[order(rownames(metadata_matrix)),]
+  color_matrix <- create_colors(metadata_matrix, color_mode = "auto")
+  ncol.color_matrix <- ncol(color_matrix)
+  
+  metadata_factors <- as.factor(metadata_matrix[,metadata_column])
+  metadata_levels <- levels(as.factor(metadata_matrix[,metadata_column]))
+  num_levels <- length(metadata_levels)
+  color_levels <- col.wheel(num_levels)
+  all_colors <- color_matrix[,metadata_column]
+
+  return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=all_colors) )
+  
+  
+}
+######################
+######################
+
+######################
+# SUB(6): Create optimal contrast color selection using a color wheel
+# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html 
+######################
+col.wheel <- function(num_col, my_cex=0.75) {
+  cols <- rainbow(num_col)
+  col_names <- vector(mode="list", length=num_col)
+  for (i in 1:num_col){
+    col_names[i] <- getColorTable(cols[i])
+  }
+  cols
+}
+######################
+######################
+
+
+######################
+# SUB(7): The inverse function to col2rgb()
+# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html
+######################
+rgb2col <- function(rgb) {
+  rgb <- as.integer(rgb)
+  class(rgb) <- "hexmode"
+  rgb <- as.character(rgb)
+  rgb <- matrix(rgb, nrow=3)
+  paste("#", apply(rgb, MARGIN=2, FUN=paste, collapse=""), sep="")
+}
+######################
+######################
+
+  
+######################
+# SUB(8): Convert all colors into format "#rrggbb"
+# adapted from https://stat.ethz.ch/pipermail/r-help/2002-May/022037.html
+######################
+getColorTable <- function(col) {
+  rgb <- col2rgb(col);
+  col <- rgb2col(rgb);
+  sort(unique(col))
+}
+######################
+######################
+
+
+######################
+# SUB(9): Automtically generate colors from metadata with identical text or values
+######################
+create_colors <- function(color_matrix, color_mode = "auto"){ # function to     
+  my_data.color <- data.frame(color_matrix)
+  ids <- rownames(color_matrix)
+  color_categories <- colnames(color_matrix)
+  for ( i in 1:dim(color_matrix)[2] ){
+    column_factors <- as.factor(color_matrix[,i])
+    column_levels <- levels(as.factor(color_matrix[,i]))
+    num_levels <- length(column_levels)
+    color_levels <- col.wheel(num_levels)
+    levels(column_factors) <- color_levels
+    my_data.color[,i]<-as.character(column_factors)
+  }
+  return(my_data.color)
+}
+######################
+######################
 
 
 
