@@ -330,7 +330,7 @@ par_fetch <- function(){
     plot.new()
     legend( x="center", legend=metadata_levels, pch=15, col=color_levels, cex=2)
     dev.off()
-    return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=ColSideColors) )
+    #return( list(metadata_levels=metadata_levels, color_levels=color_levels, all_colors=ColSideColors) )
   }
 
   
