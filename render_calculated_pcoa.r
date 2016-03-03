@@ -52,10 +52,18 @@ render_calcualted_pcoa <- function(
                             )
   
 {
-  
-  require(matR)
-  require(scatterplot3d)
-  
+
+  if ( is.element("scatterplot3d", installed.packages()[,1]) == FALSE ){ install.packages("scatterplot3d") }
+  if ( is.element("matR", installed.packages()[,1]) == FALSE ){
+      install.packages("devtools")
+      library(devtools)
+      install_github(repo="MG-RAST/matR", dependencies=FALSE, ref="early-release")
+      library(matR)
+      dependencies()
+  }  
+  library(matR)
+  library(scatterplot3d)
+   
   argument_list <- is.na(c(metadata_table,amethst_groups,color_list)) # check that incompatible options were not selected
   argument_test = length(argument_list[argument_list==TRUE])
 
