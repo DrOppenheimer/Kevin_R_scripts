@@ -151,6 +151,9 @@ heatmap_dendrogram <- function (
   
   
 ###### load the neccessary packages
+    if ( is.element("gplots", installed.packages()[,1]) == FALSE ){ install.packages("gplots") }
+    if ( is.element("matlab", installed.packages()[,1]) == FALSE ){ install.packages("matlab") }
+    if ( is.element("gtools", installed.packages()[,1]) == FALSE ){ install.packages("gtools") }    
   #library(Cairo)
   library(gplots)
   library(matlab)
