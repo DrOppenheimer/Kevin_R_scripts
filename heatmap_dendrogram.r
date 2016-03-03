@@ -58,7 +58,7 @@ heatmap_dendrogram <- function (
                                                                                 # used "as-is", ie without any reordering. If a vector of integers,
                                                                                 # then dendrogram is computed and reordered based on the order of the vector.
                                           
-                                          Colv = if (symm) "Rowv" else TRUE,    # determines if and how the column dendrogram should be reordered.
+                                          Colv = TRUE, #if (symm) "Rowv" else TRUE,    # determines if and how the column dendrogram should be reordered.
                                                                                 # Has the options as the Rowv argument above and additionally when x
                                                                                 # is a square matrix, Colv = "Rowv" means that columns should be treated
                                                                                 # identically to the rows.
