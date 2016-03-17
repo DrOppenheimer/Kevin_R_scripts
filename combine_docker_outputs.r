@@ -84,7 +84,8 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
     FPKM_colnames <- vector(mode="character")
     
     for (i in 1:length(my_ids)){
-        
+
+        print(paste("PROCESSING SAMPLE( ", i, " )"))
         #my_file=paste("./", my_ids[i], "/star_2_pass/genes.fpkm_tracking", sep="") # 1-4-16 analysis
         my_file=paste(my_ids[i])  # 3-10-16 analysis -- results from id service
         
