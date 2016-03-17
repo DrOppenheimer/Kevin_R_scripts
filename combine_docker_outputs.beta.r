@@ -167,7 +167,7 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
 
         }else{
     
-            cat(print(paste(my_file, "DOES NOT EXIST"), sep="\n", file=log_file, append=TRUE))
+            cat(paste(my_file, "DOES NOT EXIST"), sep="\n", file=log_file, append=TRUE)
             # subloop to add the column names when on the last sample (make this a sub)
             if( i == length(my_ids) ){ # take care of the last sample (add column headers)
                 # add column names
