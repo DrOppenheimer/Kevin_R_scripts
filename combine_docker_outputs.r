@@ -81,7 +81,7 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
 
     # create matrix to hold data and vector to hold colnames
     FPKM_matrix <- matrix()
-     <- vector(mode="character")
+    FPKM_colnames <- vector(mode="character")
     
     for (i in 1:length(my_ids)){
 
