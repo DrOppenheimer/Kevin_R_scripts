@@ -61,7 +61,11 @@
   # FPKM_status
 
 
-combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", output_prefix="my_data", load_prereqs=FALSE, export_R_table=FALSE, debug=FALSE){
+combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", output_prefix="my_data", load_prereqs=FALSE, export_R_table=TRUE, debug=FALSE){
+
+    if( identical(output_prefix, "my_data") ){
+        output_prefix=paths_file
+    }
     
     # option to load prereqs
     if( load_prereqs==TRUE ){
