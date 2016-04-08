@@ -111,7 +111,7 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
             
             # Add name of current file to the colnames vector
             #split_path_string <- unlist(strsplit(my_ids[i], split="/")) # 1-4-16 analysis
-            split_path_string <- unlist(strsplit(my_ids[i], split="."))  # 3-10-16 analysis -- results from id service
+            split_path_string <- unlist(strsplit(my_ids[i], split="\\."))  # 3-10-16 analysis -- results from id service
             my_data_name <- split_path_string[1]
 
             if(debug==TRUE){print(paste("made it here (0.4)"))}
