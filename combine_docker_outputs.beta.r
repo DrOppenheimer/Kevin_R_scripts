@@ -150,6 +150,9 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
                 FPKM_matrix$Row.names <- NULL
                 FPKM_colnames <- c(FPKM_colnames, my_data_name)
                 if(debug==TRUE){print(paste("col_names:", FPKM_colnames))}
+                if(iterative_write==TRUE){
+                    export_data(FPKM_matrix, output_name)
+                }
                 # subloop to add the column names when on the last sample (make this a sub)
                 cat(paste(my_ids[i], "PROCESSED"), sep="\n", file=log_file, append=TRUE)
                 if( i == length(my_ids) ){ # take care of the last sample (add column headers)
