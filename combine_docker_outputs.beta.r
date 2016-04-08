@@ -61,7 +61,7 @@
   # FPKM_status
 
 
-combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", output_prefix="my_data", load_prereqs=FALSE, export_R_table=FALSE, debug=FALSE){
+combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", output_prefix="my_data", load_prereqs=FALSE, export_R_table=FALSE, iterative_write=FALSE, debug=FALSE){
     
     # option to load prereqs
     if( load_prereqs==TRUE ){
@@ -137,6 +137,9 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
                 if(debug==TRUE){print(paste("i: ", i))}
                 #cat("World",file="outfile.txt",append=TRUE)
                 cat(paste(my_ids[i], "PROCESSED"), sep="\n", file=log_file, append=FALSE)
+                if(iterative_write==TRUE){
+                    export_data(FPKM_matrix, output_name)
+                }
             }else{ # import all other datasets - subloop to take care of the last
                 # Import the data into an R matrix
                 if(debug==TRUE){print(paste("made it here (3)"))}
