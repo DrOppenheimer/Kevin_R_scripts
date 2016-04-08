@@ -88,7 +88,7 @@ combine_docker_outputs <- function(paths_file="test_list", my_dataype="FPKM", ou
         #my_file=paste("./", my_ids[i], "/star_2_pass/genes.fpkm_tracking", sep="") # 1-4-16 analysis
         my_file=paste(my_ids[i])  # 3-10-16 analysis -- results from id service
         
-        if(debug==TRUE){print(paste("made it here (0)"))}
+        print(paste("Processing ( ", i ," ) of ", length(my_ids), " samples: ", my_ids[i] ))
         
         if(debug==TRUE){print(paste(my_ids[i], sep=""))}  
         
