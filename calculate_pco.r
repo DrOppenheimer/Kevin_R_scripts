@@ -12,10 +12,10 @@ calculate_pco <- function(
 
 {
                                         # load packages
-  #if ( is.element("matlab", installed.packages()[,1]) == FALSE ){ install.packages("matlab") }
-  #if ( is.element("ecodist", installed.packages()[,1]) == FALSE ){ install.packages("ecodist") }  
-  #library(matlab)      
-  #library(ecodist)
+  if ( is.element("matlab", installed.packages()[,1]) == FALSE ){ install.packages("matlab") }
+  if ( is.element("ecodist", installed.packages()[,1]) == FALSE ){ install.packages("ecodist") }  
+  library(matlab)      
+  library(ecodist)
   #suppressPackageStartupMessages(library(Cairo))
   #suppressPackageStartupMessages(library(gplots))
 
