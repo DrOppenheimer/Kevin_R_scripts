@@ -37,11 +37,11 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         }
         names(my_data.list) <- rownames(my_data)
         for ( j in 1:length(my_data.list) ){
-            if(debug==TRUE){print(paste("my row: ", my_keys[i]))}
-            if(debug==TRUE){print(paste("my col: ", my_data.list[j]))}
+            if(debug==TRUE){print(paste("my row: ", my_keys[j]))}
+            if(debug==TRUE){print(paste("my col: ", my_data.list[i]))}
             my_data_matrix[ my_keys[[j]] , my_ids[[i]] ] <- my_data.list[[j]]
         }
-        rownames(my_data_matrix) <- gsub(".htseq.counts.gz", "", rownames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
+        colnames(my_data_matrix) <- gsub(".htseq.counts", "", colnames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
     }
 
     # export the merged data
