@@ -17,10 +17,10 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no")
         my_keys <- unique( rownames(my_data), my_keys )
     }
 
-    # Read second time to generate the metadata matrix
+    # Read second time to generate the data matrix
     my_data_matrix <- matrix(NA, length(my_keys), length(my_ids))
-    rownames(my_metadata_matrix) <- my_keys
-    colnames(my_metadata_matrix) <- my_ids.no_extension
+    rownames(my_data_matrix) <- my_keys
+    colnames(my_data_matrix) <- my_ids.no_extension
     for ( i in 1:length(my_ids) ){
         print(paste("Second read: ", i))
         my_data <- data.matrix(read.table(file=id_list, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
@@ -29,7 +29,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no")
         for ( j in 1:length(my_data.list) ){
             my_data_matrix[ my_keys[j] , my_ids[i] ] <- my_data.list[j]
         }
-        rownames(my_metadata_matrix) <- gsub(".htseq.counts.gz", "", rownames(my_metadata_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
+        rownames(my_data_matrix) <- gsub(".htseq.counts.gz", "", rownames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
     }
 
     # export the merged data
@@ -37,7 +37,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no")
         my_data_matrix <- rot90(rot90(rot90(my_data_matrix)))
     }
     fileout_name <- gsub(" ", "", paste(id_list, ".merged_data.txt"))
-    export_data(my_metadata_matrix, fileout_name)
+    export_data(my_data_matrix, fileout_name)
     
 }
 
