@@ -50,11 +50,11 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
             if(debug==TRUE){print(paste("my_ids[[i]]:", my_ids[[i]]))}
             if(debug==TRUE){print(paste("my_data.list[[j]]:", my_data.list[[j]]))}
             row_index = rownames(my_data)[[j]]
-            if(debug==TRUE){print("row index: ", row_index)}
+            if(debug==TRUE){print(paste("row index: ", row_index))}
             col_index = my_ids[[i]]
-            if(debug==TRUE){print("col index: ", col_index)}
+            if(debug==TRUE){print(paste("col index: ", col_index))}
             value = my_data.list[[j]]
-            if(debug==TRUE){print("value: ", value)}
+            if(debug==TRUE){print(paste("value: ", value))}
 
             my_data_matrix[ row_index, col_index] <- value
         }
