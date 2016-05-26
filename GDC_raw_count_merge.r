@@ -18,6 +18,9 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         if(debug==TRUE){print(paste("num keys: ", length(my_keys)))}
     }
 
+    # unlist keys (row names)
+    my_keys <- unlist(my_keys)
+    
     # Matrix to collect the data on the second pass
     my_data_matrix <- matrix(NA, length(my_keys), length(my_ids))
     rownames(my_data_matrix) <- my_keys
@@ -26,9 +29,6 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     if(debug==TRUE){test_ids<<-my_ids}
     if(debug==TRUE){test_matrix<<-my_data_matrix}
 
-    # unlist keys (row names)
-    my_keys <- unlist(my_keys)
-    
     # Read second time to generate the data matrix
     for ( i in 1:length(my_ids) ){
         print(paste("Second read: ", i))
