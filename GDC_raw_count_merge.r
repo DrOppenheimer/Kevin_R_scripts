@@ -52,8 +52,10 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
             value = as.integer(my_data.list[j])
             if(debug==TRUE){print(paste("value: ", value))}
 
+            print( my_data_matrix[ row_index, col_index ] )
+            print( value )
                                         #my_data_matrix[ row_index, col_index ] <- value
-            my_data_matrix[ row_index, j ] <- value
+            #my_data_matrix[ row_index, col_index ] <- value
             if(debug==TRUE){test_matrix<<-my_data_matrix}
         }
         colnames(my_data_matrix) <- gsub(".htseq.counts", "", colnames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
