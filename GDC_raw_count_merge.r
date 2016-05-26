@@ -13,7 +13,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     # read through once to get the keys
     for ( i in 1:length(my_ids) ){
         print(paste("First read: ", i))
-        my_data <- data.matrix(read.table(file=id_list, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
+        my_data <- data.matrix(read.table(file=my_ids[i], row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
         my_keys <- unique( c(rownames(my_data), my_keys) )
         if(debug==TRUE){print("num keys: ", length(my_keys))}
     }
@@ -26,7 +26,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     # Read second time to generate the data matrix
     for ( i in 1:length(my_ids) ){
         print(paste("Second read: ", i))
-        my_data <- data.matrix(read.table(file=id_list, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
+        my_data <- data.matrix(read.table(file=my_ids[i], row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
         my_data.list <- as.list(my_data)
         if(debug==TRUE){
             print(paste("Length list: ", length(my_data.list)))
