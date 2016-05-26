@@ -15,7 +15,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         print(paste("First read: ", i))
         my_data <- data.matrix(read.table(file=my_ids[i], row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
         my_keys <- unique( c(rownames(my_data), my_keys) )
-        if(debug==TRUE){print("num keys: ", length(my_keys))}
+        if(debug==TRUE){print(paste("num keys: ", length(my_keys)))}
     }
 
     # Matrix to collect the data on the second pass
@@ -34,7 +34,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         }
         names(my_data.list) <- rownames(my_data)
         for ( j in 1:length(my_data.list) ){
-            if(debug==TRUE){print("my key: ", my_keys[j])}
+            if(debug==TRUE){print(paste("my key: ", my_keys[j]))}
             my_data_matrix[ my_keys[j] , my_ids[i] ] <- my_data.list[j]
         }
         rownames(my_data_matrix) <- gsub(".htseq.counts.gz", "", rownames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
