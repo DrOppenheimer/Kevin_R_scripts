@@ -1,4 +1,4 @@
-GDC_raw_count_merge<- function( id_list="my_id_list", my_rot="no")
+GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no")
     
 {                       
     ### MAIN ###
@@ -13,7 +13,7 @@ GDC_raw_count_merge<- function( id_list="my_id_list", my_rot="no")
     # read through once to get the keys
     for ( i in 1:length(my_ids) ){
         print(paste("First read: ", i))
-        my_data <- data.matrix(read.table(file_name, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
+        my_data <- data.matrix(read.table(file_name=id_list, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
         my_keys <- unique( rownames(my_data), my_keys )
     }
 
@@ -23,7 +23,7 @@ GDC_raw_count_merge<- function( id_list="my_id_list", my_rot="no")
     colnames(my_metadata_matrix) <- my_ids.no_extension
     for ( i in 1:length(my_ids) ){
         print(paste("Second read: ", i))
-        my_data <- data.matrix(read.table(file_name, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
+        my_data <- data.matrix(read.table(file_name=id_list, row.names=1, header=TRUE, sep="\t", comment.char="", quote="", check.names=FALSE))
         my_data.list <- as.list(my_data)
         names(my_data.list) <- rownames(my_data)
         for ( j in 1:length(my_data.list) ){
