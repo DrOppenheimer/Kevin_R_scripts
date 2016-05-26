@@ -22,6 +22,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     my_data_matrix <- matrix(NA, length(my_keys), length(my_ids))
     rownames(my_data_matrix) <- my_keys
     colnames(my_data_matrix) <- my_ids
+    if(debug==TRUE{test_matrix<<-my_data_matrix})
 
     # Read second time to generate the data matrix
     for ( i in 1:length(my_ids) ){
@@ -34,7 +35,8 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         }
         names(my_data.list) <- rownames(my_data)
         for ( j in 1:length(my_data.list) ){
-            if(debug==TRUE){print(paste("my key: ", my_keys[j]))}
+            if(debug==TRUE){print(paste("my row: ", my_keys[j]))}
+            if(debug==TRUE){print(paste("my col: ", my_data.list[j]))}
             my_data_matrix[ my_keys[j] , my_ids[i] ] <- my_data.list[j]
         }
         rownames(my_data_matrix) <- gsub(".htseq.counts.gz", "", rownames(my_data_matrix)) # get rid of extensions leaving just the uuid (for easy metadata lookup later) 
