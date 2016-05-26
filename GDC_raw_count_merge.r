@@ -52,6 +52,9 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
             value = as.integer(my_data.list[j])
             if(debug==TRUE){print(paste("value: ", value))}
 
+            print(paste("+++", row_index, "+++",sep=""))
+            print(paste("+++", col_index, "+++",sep=""))
+            
             print( my_data_matrix[ row_index, col_index ] )
             print( value )
                                         #my_data_matrix[ row_index, col_index ] <- value
