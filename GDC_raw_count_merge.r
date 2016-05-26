@@ -40,6 +40,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
             print(paste("Nrows data : ", length(rownames(my_data))))
         }
         names(my_data.list) <- rownames(my_data)
+        if(debug==TRUE){my_data.list.test<<-my_data.list}
         for ( j in 1:length(my_data.list) ){
             if(debug==TRUE){print(paste("i:",i," j:",j))}
             if(debug==TRUE){print(paste("my row: ", my_keys[j]))}
