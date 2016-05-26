@@ -19,7 +19,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     }
 
     # Matrix to collect the data on the second pass
-     <- matrix(NA, length(my_keys), length(my_ids))
+    my_data_matrix <- matrix(NA, length(my_keys), length(my_ids))
     rownames(my_data_matrix) <- my_keys
     colnames(my_data_matrix) <- my_ids
     if(debug==TRUE){test_keys<<-my_keys}
