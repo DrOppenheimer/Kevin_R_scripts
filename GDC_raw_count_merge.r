@@ -8,7 +8,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     
     my_ids <- flatten_list(as.list(scan(file=id_list, what="character")))
 
-    my_keys <- list(type="character")
+    #my_keys <- list(type="character")
 
     # read through once to get the keys
     for ( i in 1:length(my_ids) ){
