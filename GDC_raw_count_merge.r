@@ -33,7 +33,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     for ( i in 1:length(my_ids) ){
         print(paste("Second read: ", i))
         my_data <- data.matrix(read.table(file=my_ids[i], row.names=1, header=FALSE, sep="\t", comment.char="", quote="", check.names=FALSE))
-        my_data.list <- as.list(my_data)
+        my_data.list <- unlist(as.list(my_data))
         if(debug==TRUE){
             if(debug==TRUE){test_list<<-my_data.list}
             print(paste("Length list: ", length(my_data.list)))
