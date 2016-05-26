@@ -19,7 +19,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
     }
 
     # Matrix to collect the data on the second pass
-    my_data_matrix <- matrix(NA, length(my_keys), length(my_ids))
+     <- matrix(NA, length(my_keys), length(my_ids))
     rownames(my_data_matrix) <- my_keys
     colnames(my_data_matrix) <- my_ids
     if(debug==TRUE){test_keys<<-my_keys}
@@ -42,13 +42,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", debug=FALSE)
         names(my_data.list) <- rownames(my_data)
         if(debug==TRUE){my_data.list.test<<-my_data.list}
         for ( j in 1:length(my_data.list) ){
-            if(debug==TRUE){print(paste("i:",i," j:",j))}
-            if(debug==TRUE){print(paste("my row: ", my_keys[j]))}
-            if(debug==TRUE){print(paste("my col: ", my_ids[i]))}
-                                        #my_data_matrix[ my_keys[[j]] , my_ids[[i]] ] <- my_data.list[[j]]
-            if(debug==TRUE){print(paste("rownames(my_data)[[j]]:", rownames(my_data)[[j]]))}
-            if(debug==TRUE){print(paste("my_ids[[i]]:", my_ids[[i]]))}
-            if(debug==TRUE){print(paste("my_data.list[[j]]:", my_data.list[[j]]))}
+            #my_data_matrix[ my_keys[[j]] , my_ids[[i]] ] <- my_data.list[[j]]
             row_index = as.character(rownames(my_data)[[j]])
             if(debug==TRUE){print(paste("row index: ", row_index))}
             col_index = as.character(my_ids[[i]])
