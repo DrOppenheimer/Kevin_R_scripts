@@ -33,6 +33,9 @@ GDC_raw_count_merge<- function( id_list="my_id_list", my_rot="no")
     }
 
     # export the merged data
+    if( identical(my_rot, "yes")==TRUE ){
+        my_data_matrix <- rot90(rot90(rot90(my_data_matrix)))
+    }
     fileout_name <- gsub(" ", "", paste(id_list, ".merged_data.txt"))
     export_data(my_metadata_matrix, fileout_name)
     
