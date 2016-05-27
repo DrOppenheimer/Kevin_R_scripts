@@ -19,7 +19,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
             my_data_matrix <- data.matrix(read.table(file=my_ids[i], row.names=1, header=FALSE, sep="\t", comment.char="", quote="", check.names=FALSE))
             colnames(my_data_matrix) <- my_ids[i]
         }else{ # for all additional samples add on to the existing matrix
-            if(debug==TRUE){print(paste("Processing sample (", i, ")"))}
+            if(verbose==TRUE){print(paste("Processing sample (", i, ")"))}
             my_sample_matrix  <- data.matrix(read.table(file=my_ids[i], row.names=1, header=FALSE, sep="\t", comment.char="", quote="", check.names=FALSE))
             colnames(my_sample_matrix) <- my_ids[i]
             my_data_matrix <- combine_matrices_by_column(my_data_matrix, my_sample_matrix)
