@@ -1,4 +1,4 @@
-GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=TRUE,  order_columns=TRUE, debug=FALSE, verbose=FALSE, remove_tag=".htseq.counts")
+GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", pseudo_fudge=NA, order_rows=TRUE,  order_columns=TRUE, debug=FALSE, verbose=FALSE, remove_tag=".htseq.counts")
     
 {                       
     ### MAIN ###
@@ -30,6 +30,12 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
 
     # remove tag from colnames
     colnames(my_data_matrix) <- gsub(remove_tag, "", colnames(my_data_matrix))
+
+    # substitute for missing counts - NA by default
+    if( is.na(pseudo_fudge)==TRUE ){}else{
+        pseudo_count <- min(my_data_matrix, na.rm=TRUE)/pseudo_fudge # find the min real value; that num/pseudo_fudge = pseudo_count value
+        comb_matrix[is.na(my_data_matrix)] <- pseudo_count # replace NA with pseudo_count
+    }
     
     # rotate the matrix if that option is selected
     if( identical(my_rot, "yes")==TRUE ){
