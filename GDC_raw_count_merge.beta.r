@@ -12,7 +12,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
 
     if(debug==TRUE){print("Made it here 2")}
     
-    my_data_matrix <- data.matrix()
+    my_data_matrix <- matrix()
 
     if(debug==TRUE){print("Made it here 3")}
     
