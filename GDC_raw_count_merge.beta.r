@@ -1,4 +1,4 @@
-GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=TRUE,  order_columns=TRUE, debug=FALSE)
+GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=TRUE,  order_columns=TRUE, debug=FALSE, remove_tag=".htseq.counts")
     
 {                       
     ### MAIN ###
@@ -26,6 +26,9 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
     }
 
     if(debug==TRUE){print("Made it here 4")}
+
+    # remove tag from colnames
+    colnames(my_data_matrix) <- gsub(remove_tag, "", colnames(my_data_matrix))
     
     # rotate the matrix if that option is selected
     if( identical(my_rot, "yes")==TRUE ){
