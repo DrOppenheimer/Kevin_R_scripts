@@ -5,10 +5,16 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
     ###### load the neccessary packages
     if ( is.element("matlab", installed.packages()[,1]) == FALSE ){ install.packages("matlab") }    
     library(matlab)
+
+    if(debug==TRUE){print("Made it here 1")}
     
     my_ids <- flatten_list(as.list(scan(file=id_list, what="character")))
+
+    if(debug==TRUE){print("Made it here 2")}
     
     my_data_matrix <- data.matrix()
+
+    if(debug==TRUE){print("Made it here 3")}
     
     # read through the files and build out the data matrix
     for ( i in 1:length(my_ids) ){
@@ -19,11 +25,15 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", order_rows=T
         my_data_matrix <- combine_matrices_by_column(my_data_matrix, my_sample_matrix)
     }
 
+    if(debug==TRUE){print("Made it here 4")}
+    
     # rotate the matrix if that option is selected
     if( identical(my_rot, "yes")==TRUE ){
         my_data_matrix <- rot90(rot90(rot90(my_data_matrix)))
     }
 
+    if(debug==TRUE){print("Made it here 5")}
+    
     # output the matrix as a flat file
     fileout_name <- gsub(" ", "", paste(id_list, ".merged_data.txt"))
     export_data(my_data_matrix, fileout_name)
