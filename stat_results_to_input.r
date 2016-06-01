@@ -1,5 +1,7 @@
-stat_results_to_input <- function(stats_matrix, output_type="file"){
+stat_results_to_input <- function(stats_matrix, output_type="file", first_row=1, last_row="last_row"){
 
+# simple script to convert *.STATS.RESULTS back to just data that can be used as analysis inputs    
+    
     my_data <- import_data(stats_matrix)
 
     col_names <- vector()
@@ -45,6 +47,16 @@ stat_results_to_input <- function(stats_matrix, output_type="file"){
     new_matrix <- my_data[,delete_index]
     colnames(new_matrix) <- col_names[delete_index]
     rownames(new_matrix) <- rownames(my_data)
+    
+    if( identical(last_row, "last_row") == FALSE ){
+        if( last_row > nrow(new_matrix)){print(paste("There are not (", last_row, ") rows in the matrix"));stop()}
+        new_matrix <- new_matrix[1:last_row, ,drop=FALSE]
+    }
+
+    if( first_row > 1){
+        if( first_row > nrow(new_matrix) ){print(paste("There are not (", last_row, ") rows in the matrix"));stop()}
+        new_matrix <- new_matrix[first_row:nrow(new_matrix), ,drop=FALSE]
+    }
 
     if( identical(output_type, "file") == TRUE ){
         output_filename <- gsub(" ", "", paste(stats_matrix, ".STATS_REMOVED.txt"))
