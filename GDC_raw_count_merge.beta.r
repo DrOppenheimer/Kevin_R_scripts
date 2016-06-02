@@ -14,6 +14,7 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", pseudo_fudge
    
     # read through the files and build out the data matrix
     for ( i in 1:length(my_ids) ){
+        print(paste("Processing sample (", i, ")", "of", "[", length(my_ids),"]"))
         if( i==1 ){ # on first sample, create the data matrix
             if(verbose==TRUE){print(paste("Processing sample (", i, ")"))}
             my_data_matrix <- data.matrix(read.table(file=my_ids[i], row.names=1, header=FALSE, sep="\t", comment.char="", quote="", check.names=FALSE))
