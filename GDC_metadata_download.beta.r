@@ -79,21 +79,26 @@ flatten_list <- function(some_list){
 
 
 # original example from Michael
-https://gdc-api.nci.nih.gov/cases?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22files.file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%2207218202-2cd3-4db1-93e7-071879e36f27%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=case_id&expand=demographic,diagnoses,diagnoses.treatments,family_histories,exposures
+# https://gdc-api.nci.nih.gov/cases?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22files.file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%2207218202-2cd3-4db1-93e7-071879e36f27%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=case_id&expand=demographic,diagnoses,diagnoses.treatments,family_histories,exposures
 
 # Project endpoint
-curl 'https://gdc-api.nci.nih.gov/projects?from=1&size=2&sort=project.project_id:asc&pretty=true'
+# curl 'https://gdc-api.nci.nih.gov/projects?from=1&size=2&sort=project.project_id:asc&pretty=true'
+
+
 
 # Files endpoint
-curl 'https://gdc-api.nci.nih.gov/files?from=1&size=2&sort=file_size:asc&pretty=true'
+# curl 'https://gdc-api.nci.nih.gov/files?from=1&size=2&sort=file_size:asc&pretty=true'
 
 # Cases endpoint
-curl 'https://gdc-api.nci.nih.gov/cases?filters=%7B%22op%22%3A%22and%22%2C%22content%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22submitter_id%22%2C%22value%22%3A%5B%22TCGA-BH-A0EA%22%5D%7D%7D%5D%7D%0A%0A&pretty=true'
+# curl 'https://gdc-api.nci.nih.gov/cases?filters=%7B%22op%22%3A%22and%22%2C%22content%22%3A%5B%7B%22op%22%3A%22in%22%2C%22content%22%3A%7B%22field%22%3A%22submitter_id%22%2C%22value%22%3A%5B%22TCGA-BH-A0EA%22%5D%7D%7D%5D%7D%0A%0A&pretty=true'
+https://gdc-api.nci.nih.gov/cases?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22files.file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%2207218202-2cd3-4db1-93e7-071879e36f27%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=case_id&expand=project.program
+
+
+
 
 # Annotations endpoint
-curl 'https://gdc-api.nci.nih.gov/annotations?from=1&size=2&pretty=true'
-
-# files 
+# curl 'https://gdc-api.nci.nih.gov/annotations?from=1&size=2&pretty=true'
+# example # https://gdc-api.nci.nih.gov/cases?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22files.file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22  ID  %22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=case_id&expand=demographic,diagnoses,diagnoses.treatments,family_histories,exposures
 
 
 

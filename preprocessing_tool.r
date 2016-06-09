@@ -27,7 +27,11 @@ preprocessing_tool <- function(
                                   )
 
   {
-    
+
+    # Install DESeq  
+    #source("https://bioconductor.org/biocLite.R")
+    #biocLite("DESeq")
+      
     # check for necessary packages, install if they are not there
     #require(matR) || install.packages("matR", repo="http://mcs.anl.gov/~braithwaite/R", type="source")
     #chooseCRANmirror()
