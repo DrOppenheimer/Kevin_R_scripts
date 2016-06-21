@@ -37,6 +37,11 @@ GDC_raw_count_merge <- function( id_list="my_id_list", my_rot="no", pseudo_fudge
         pseudo_count <- min(my_data_matrix, na.rm=TRUE)/pseudo_fudge # find the min real value; that num/pseudo_fudge = pseudo_count value
         comb_matrix[is.na(my_data_matrix)] <- pseudo_count # replace NA with pseudo_count
     }
+
+    # remvove rows that contain summary statistics (These start with a "_")
+    remove_index <- c()
+    for (i in 1:length(rownames(my_data_matrix))){ print(i); if( length(grep(pattern='^_', x=rownames(my_data_matrix)[i])) > 0){ remove_index <- c(remove_index, i) } }
+    my_data_matrix <- my_data_matrix[-remove_index,]
     
     # rotate the matrix if that option is selected
     if( identical(my_rot, "yes")==TRUE ){
