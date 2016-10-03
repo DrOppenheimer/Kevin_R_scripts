@@ -38,8 +38,16 @@ preprocessing_tool <- function(
     setRepositories(ind=1:8)
     #####source("http://bioconductor.org/biocLite.R")
     # Install packages if they are not already installed
-    #if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("DESeq") }
-    #if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("preprocessCore") }
+
+    if ( is.element("matR", installed.packages()[,1]) == FALSE ){
+        install.packages("devtools")
+        library(devtools)
+        install_github(repo="MG-RAST/matR", dependencies=FALSE, ref="early-release")
+        library(matR)
+        dependencies()
+    }
+    if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("DESeq") }
+    if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("preprocessCore") }
     #if ( is.element("RColorBrewer", installed.packages()[,1]) == FALSE ){ install.packages("RColorBrewer") }
 
                                         #require(preprocessCore) || install.packages("preprocessCore")
@@ -49,8 +57,8 @@ preprocessing_tool <- function(
     #####if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ biocLite("DESeq") }
     # (DESeq): www.ncbi.nlm.nih.gov/pubmed/20979621
 
-    #library(preprocessCore)
-    #library(DESeq)
+    library(preprocessCore)
+    library(DESeq)
     #library(RColorBrewer)
 
     ###### MAIN
