@@ -1,5 +1,7 @@
 # download the metadata for multiple projects
 
+# http://urldecode.org/ # this is how are you doing it now
+# https://gdc-docs.nci.nih.gov/API/Users_Guide/Search_and_Retrieval/#example-http-post-request # should move to this model -- @payload is file, "@" sign must be prefix in the code
 
 selected_projects <- c(
     "TCGA-BRCA",
@@ -15,12 +17,7 @@ selected_projects <- c(
     "TCGA-BLCA"
 )
 
-
-
-
-
-
-get_GDC_project_ids <- function(){
+get_GDC_project_ids <- function(){ ### 11-29-16
 
     my_projects <- vector(mode="character")
     
@@ -40,11 +37,6 @@ get_GDC_project_ids <- function(){
 }
 
 
-
-
-
-
-
 ### Source Ronald and Mert scripts
 RandM_scripts <- dir(path="~/git/Ronald-and-Mert/", pattern=".r$")
 RandM_scripts <- c(RandM_scripts, dir(path="~/git/Ronald-and-Mert/", pattern=".r$"))
@@ -62,36 +54,108 @@ for (i in 1:length(selected_projects)){
   export_listof_UUIDs(project=selected_projects[i])  
 } 
 
-# get the metadata 
+#### get the metadata 
 #get_GDC_metadata("TCGA-LUAD_file_UUIDs")
 UUID_file_list <- dir(pattern="_UUIDs$")
 for (i in 1:length(UUID_file_list)){
     print(paste("current project", UUID_file_list[i]))
     get_GDC_metadata(UUID_file_list[i])
 }
-# failed on LUAD? try
-for (i in 8:length(UUID_file_list)){
-    print(paste("current project", UUID_file_list[i]))
-    get_GDC_metadata(UUID_file_list[i])
-}
-## > for (i in 9:length(UUID_file_list)){
-## +     print(paste("current project", UUID_file_list[i]))
-## +     get_GDC_metadata(UUID_file_list[i])
-## + }
-## [1] "current project TCGA-LUAD_file_UUIDs"
-## Read 594 items
-## [1] "Processing sample ( 1 : 001c6345-176c-4ab3-a0c8-27384879a8ff )"
-##   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-##                                  Dload  Upload   Total   Spent    Left  Speed
-##   0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0curl: (7) Failed to connect to cloud-proxy port 3128: No route to host
-## Error in fromJSON(content, handler, default.size, depth, allowComments,  : 
-##   invalid JSON input
+## # failed on LUAD? try ### was a proxy issue that Kyle fixed -- no problem with code
+## for (i in 8:length(UUID_file_list)){
+##     print(paste("current project", UUID_file_list[i]))
+##     get_GDC_metadata(UUID_file_list[i])
+## }
+## ## > for (i in 9:length(UUID_file_list)){
+## ## +     print(paste("current project", UUID_file_list[i]))
+## ## +     get_GDC_metadata(UUID_file_list[i])
+## ## + }
+## ## [1] "current project TCGA-LUAD_file_UUIDs"
+## ## Read 594 items
+## ## [1] "Processing sample ( 1 : 001c6345-176c-4ab3-a0c8-27384879a8ff )"
+## ##   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+## ##                                  Dload  Upload   Total   Spent    Left  Speed
+## ##   0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0curl: (7) Failed to connect to cloud-proxy port 3128: No route to host
+## ## Error in fromJSON(content, handler, default.size, depth, allowComments,  : 
+## ##   invalid JSON input
+
+
+### get the data
+# test
+download_all_from_GDC(selected_projects)
 
 
 
 
-# get the data 
+
 get_GDC_metadata("TCGA-LUAD_file_UUIDs")
+
+
+
+
+### Merge data matrices
+
+import_metadata <- function(group_table){ #, group_column, sample_names){
+    metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+        read.table(
+            file=group_table,row.names=1,header=TRUE,sep="\t",
+            colClasses = "character", check.names=FALSE,
+            comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+        )
+    )
+}
+
+
+combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FALSE, pseudo_fudge=10000, na_2=NA, from_file=FALSE, order_rows=TRUE, order_columns=TRUE){
+    # import data from file if that option is selected
+    if(from_file==TRUE){
+        matrix1<-import_metadata(matrix1)
+        matrix2<-import_metadata(matrix2)
+    }
+    # perform the merge
+    comb_matrix<- merge(matrix1, matrix2, by="row.names", all=TRUE)
+    # undo garbage formatting that merge introduces
+    rownames(comb_matrix) <- comb_matrix$Row.names
+    comb_matrix$Row.names <- NULL
+    colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
+    if ( is.na(na_2)==FALSE ){
+        comb_matrix[is.na(comb_matrix)] <- na_2 # replace NA with pseudo_count
+    }
+    if ( use_fudge==TRUE ){
+        pseudo_count <- min(comb_matrix, na.rm=TRUE)/pseudo_fudge # find the min real value; that num/pseudo_fudge = pseudo_count value
+        comb_matrix[is.na(comb_matrix)] <- pseudo_count # replace NA with pseudo_count
+    }
+    # order columns
+    if( order_rows==TRUE){
+        ordered_rownames <- order(rownames(comb_matrix))
+        comb_matrix <- comb_matrix[ordered_rownames,]
+    }
+    # order rows
+    if( order_columns==TRUE){
+        ordered_colnames <- order(colnames(comb_matrix))
+        comb_matrix <- comb_matrix[,ordered_colnames]
+    }
+    if( is.na(export)==FALSE ){
+        output_name <- gsub(" ", "", paste(export, ".merged_data.txt"))
+        export_data(comb_matrix, output_name)
+    }
+    return(comb_matrix)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -171,8 +235,19 @@ download_cancer_from_GDC <- function(projects) {
 }
 
 
-download_data_from_GDC <- function(project_name){
-
+download_all_from_GDC <- function(projects){ ### 11-29-16
+    for (p in projects) {
+        my_call <- paste0("https%3a%2f%2fgdc-api.nci.nih.gov%2ffiles%3ffields%3dfile_id%26size%3d99999%26pretty%3dtrue%26filters%3d%7b%0d%0a++++%22op%22%3a%22and%22%2c%0d%0a++++%22content%22%3a%5b%7b%0d%0a++++++++%22op%22%3a%22in%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22analysis.workflow_type%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22HTSeq+-+Counts%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%2c%7b%0d%0a++++++++%22op%22%3a%22in%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22files.data_format%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22TXT%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%2c%7b%0d%0a++++++++%22op%22%3a%22%3d%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22cases.case_id%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22", p, "%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%5d%0d%0a%7d")
+        my_call.json <- fromJSON(getURL(my_call))
+        UUID.list <- unlist(my_call.json$data$hits)
+        for(j in UUID.list) {
+            print(paste0(j, ": ", j))
+            system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+                         j,
+                         "'",
+                         sep=""))
+        }
+    }
 }
 
 
@@ -220,6 +295,25 @@ download_data_from_GDC <- function(project_name){
 
 ### then reference that file with --data (be sure to use the "@" prefix)
 curl --request POST --header "Content-Type: application/json" --data @some_file.txt 'https://gdc-api.nci.nih.gov/files' > response.json
+
+
+
+
+cases.project.project_id in ["TCGA-BRCA"] and files.experimental_strategy in ["RNA-Seq"] and files.analysis.workflow_type in ["HTSeq - Counts"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -399,3 +493,71 @@ download_cancer_from_GDC <- function(projects) {
 }
 
 
+
+
+
+##############################
+# GET CANCER SAMPLES EXAMPLE
+https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22cases.samples.sample_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22Primary+Tumor%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22HTSeq+-+Counts%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.case_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22TCGA-LUAD%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D"
+
+
+https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters={
+	"op":"and",
+	"content":[{
+		"op":"in",
+		"content":{
+			"field":"cases.samples.sample_type",
+			"value":["Primary Tumor"]
+			}
+		},{
+		"op":"in",
+		"content":{
+			"field":"analysis.workflow_type",
+			"value":["HTSeq - Counts"]
+			}
+		},{
+		"op":"in",
+		"content":{
+			"field":"files.data_format",
+			"value":["TXT"]
+			}
+		},{
+		"op":"=",
+	    "content":{
+	    	"field":"cases.case_id",
+	    	"value":["TCGA-LUAD"]
+	    }
+	}]
+}"
+
+
+# TRY ALL
+
+https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters={
+    "op":"and",
+    "content":[{
+        "op":"in",
+        "content":{
+            "field":"analysis.workflow_type",
+            "value":["HTSeq - Counts"]
+        }
+    },{
+        "op":"in",
+        "content":{
+            "field":"files.data_format",
+            "value":["TXT"]
+        }
+    },{
+        "op":"=",
+        "content":{
+            "field":"cases.case_id",
+            "value":["TCGA-LUAD"]
+        }
+    }]
+}
+
+
+https%3a%2f%2fgdc-api.nci.nih.gov%2ffiles%3ffields%3dfile_id%26size%3d99999%26pretty%3dtrue%26filters%3d%7b%0d%0a++++%22op%22%3a%22and%22%2c%0d%0a++++%22content%22%3a%5b%7b%0d%0a++++++++%22op%22%3a%22in%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22analysis.workflow_type%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22HTSeq+-+Counts%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%2c%7b%0d%0a++++++++%22op%22%3a%22in%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22files.data_format%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22TXT%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%2c%7b%0d%0a++++++++%22op%22%3a%22%3d%22%2c%0d%0a++++++++%22content%22%3a%7b%0d%0a++++++++++++%22field%22%3a%22cases.case_id%22%2c%0d%0a++++++++++++%22value%22%3a%5b%22TCGA-LUAD%22%5d%0d%0a++++++++%7d%0d%0a++++%7d%5d%0d%0a%7d
+
+                                        
+                                        

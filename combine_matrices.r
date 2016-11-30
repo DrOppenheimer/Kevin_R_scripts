@@ -45,6 +45,7 @@ combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FA
 
 
 
+
 combine_matrices_by_row <- function(matrix1, matrix2, pseudo_fudge=10000, from_file=FALSE, order_rows=TRUE, order_columns=TRUE){
 
     # import data from file if that option is selected
@@ -76,7 +77,7 @@ combine_matrices_by_row <- function(matrix1, matrix2, pseudo_fudge=10000, from_f
     }
 
     if( is.na(export)==FALSE ){
-        output_name <- gsub(" ", "", paste(export, ".merged_data.txt")
+        output_name <- gsub(" ", "", paste(export, ".merged_data.txt"))
         export_data(comb_matrix, output_name)
     }
     
