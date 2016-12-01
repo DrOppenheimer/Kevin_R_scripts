@@ -21,6 +21,7 @@ project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts"
      
     # project_download_and_merge_data("TCGA-CHOL", cleanup=FALSE, debug=TRUE)
     # project_download_and_merge_data(test_projects, cleanup=TRUE, debug=TRUE)
+    # project_download_and_merge_data(selected_projects, cleanup=TRUE, debug=TRUE)
     
     write(paste( "Begin log", date() ), file=log, append=FALSE)
     
