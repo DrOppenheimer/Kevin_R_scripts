@@ -1,6 +1,6 @@
-project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl"), debug=FALSE){
-
-    # project_download_and_merge_data("TCGA-LUAD", debug=TRUE)
+project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"), rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"), cleanup=TRUE, debug=FALSE){
+    
+    # project_download_and_merge_data("TCGA-CHOL", cleanup=FALSE, debug=TRUE)
     
     # make sure packages in list are installed and sourced
     for (i in package_list){
@@ -9,10 +9,10 @@ project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts"
     }
    
     # download the data
-    download_all_from_GDC(projects, data_type, output="default", debug) 
+    download_all_from_GDC(projects, data_type, output="default", rows_to_remove=rows_to_remove, cleanup=cleanup, debug=debug) 
 }
 
-download_all_from_GDC <- function(projects, data_type, output, debug){ ### 11-29-16
+download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, cleanup, debug){ ### 11-29-16
     for (p in projects) {
 
         # delete any pre-exisiting count files
@@ -36,7 +36,9 @@ download_all_from_GDC <- function(projects, data_type, output, debug){ ### 11-29
         # create output name or use default
         data_type_filename <- gsub(" ", "", data_type)  
         if( identical( output, "default" )==TRUE ){
-            output=paste(p, ".merged.", data_type_filename, ".txt", sep="", collapse="")
+            output_filename=paste(p, ".merged.", data_type_filename, ".txt", sep="", collapse="")
+        }else{
+            output_filename <- output
         }
         if( debug==TRUE ){ print("made it here (2)") }
         
@@ -70,28 +72,81 @@ download_all_from_GDC <- function(projects, data_type, output, debug){ ### 11-29
         }
         print(paste("Done downloading", p))
     }
-    
-    
-    #return(UUID.list)
 
+    if( debug==TRUE ){ print("made it here (8)") }
+    
     # merge files into a matrix file, delete the intermediates
-    #file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
+    ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
+    tictoc::toc()
     print(paste("Merging files from", p))
     file_list <- dir(pattern=".htseq.counts.gz$")
     output_matrix <- matrix()
+    column_names <- vector(mode="character")
+    file_count <- 0
+    # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
     for ( i in file_list ){
-        input_matrix <- import_metadata( i )
-        output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+        if ( file_count==0 ){
+            input_matrix <- import_metadata( i )
+            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            output_matrix <- input_matrix
+            file_count =+ 1
+        }else{
+            if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
+            
+            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
+                if( debug==TRUE ){
+                    print("rownames identical")
+                    my_dim <- dim(output_matrix)
+                    print(my_dim)
+                }
+                output_matrix <- cbind(output_matrix, input_matrix)
+            }else{
+                output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                if( debug==TRUE ){
+                    print("rownames NOT identical")
+                    my_dim <- dim(output_matrix)
+                    print(my_dim)
+                }
+            }
+        }
     }
+    tictoc::toc()
+
+    if( debug==TRUE ){ print("made it here (9)") }
+    
+    # add the column names
+    colnames(output_matrix) <- column_names
+    if( debug==TRUE ){ print("made it here (10)") }
+
+    
+    # sort rows and columns
+    # order rows
+    ordered_colnames <- order(colnames(output_matrix))
+    output_matrix <- output_matrix[,ordered_colnames]
+    if( debug==TRUE ){ print("made it here (11)") }
+    
+     # order columns
+    ordered_rownames <- order(rownames(output_matrix))
+    output_matrix <- output_matrix[ordered_rownames,]
+    if( debug==TRUE ){ print("made it here (12)") }
+    
     print(paste("Done merging", p))
 
+    # remove selected rows
+    for ( i in rows_to_remove ) {
+        output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+    }
+
     # export merged data
-    export_data(output_matrix, data_type_filename)
+    export_data(output_matrix, output_filename)
 
     # cleanup
-    if ( length(file_list) > 0 ){
-        for ( i in file_list){
-            unlink( i )
+    if( cleanup==TRUE ){
+        if ( length(file_list) > 0 ){
+            for ( i in file_list){
+                unlink( i )
+            }
         }
     }
     
@@ -100,14 +155,14 @@ download_all_from_GDC <- function(projects, data_type, output, debug){ ### 11-29
 
 
 # function to combine input from the inividually download matrices
-combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FALSE, pseudo_fudge=10000, na_2=NA, from_file=FALSE, order_rows=TRUE, order_columns=TRUE){
+combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FALSE, pseudo_fudge=10000, na_2=NA, from_file=FALSE, order_rows=FALSE, order_columns=FALSE, merge_sort=FALSE){
     # import data from file if that option is selected
     if(from_file==TRUE){
         matrix1<-import_metadata(matrix1)
         matrix2<-import_metadata(matrix2)
     }
     # perform the merge
-    comb_matrix<- merge(matrix1, matrix2, by="row.names", all=TRUE)
+    comb_matrix<- merge(matrix1, matrix2, by="row.names", all=TRUE, sort=merge_sort)
     # undo garbage formatting that merge introduces
     rownames(comb_matrix) <- comb_matrix$Row.names
     comb_matrix$Row.names <- NULL
@@ -157,8 +212,17 @@ export_data <- function(data_object, file_name){
 }
 
 
-
-
+## http://stackoverflow.com/questions/29820029/how-to-combine-multiple-matrix-frames-into-one-using-r
+## m1 <- matrix(c('tp53','apc','c1','c2'),2);
+## m2 <- matrix(c('tp53','col2a1','d1','d2'),2);
+## m3 <- matrix(c('tp53','wt1','e1','e2'),2);
+## m <- Reduce(function(x,y) merge(x,y,1,all=T),list(m1,m2,m3));
+## m;
+## ##       V1 V2.x V2.y   V2
+## ## 1    apc   c2 <NA> <NA>
+## ## 2   tp53   c1   d1   e1
+## ## 3 col2a1 <NA>   d2 <NA>
+## ## 4    wt1 <NA> <NA>   e2
 
 
 
