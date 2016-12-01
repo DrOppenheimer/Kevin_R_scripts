@@ -1,4 +1,4 @@
-project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"), rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"), cleanup=TRUE, debug=FALSE){
+project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"), rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"), cleanup=TRUE, debug=FALSE, log="my_log.txt"){
     
     # project_download_and_merge_data("TCGA-CHOL", cleanup=FALSE, debug=TRUE)
     
@@ -9,16 +9,16 @@ project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts"
     }
    
     # download the data
-    download_all_from_GDC(projects, data_type, output="default", rows_to_remove=rows_to_remove, cleanup=cleanup, debug=debug) 
+    download_all_from_GDC(projects, data_type, output="default", rows_to_remove=rows_to_remove, cleanup=cleanup, debug=debug, log=log) 
 }
 
-download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, cleanup, debug){ ### 11-29-16
+download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, cleanup, debug, log){ ### 11-29-16
     for (p in projects) {
 
         # delete any pre-exisiting count files
         file_list <- dir(pattern=".htseq.counts.gz$")
         if( debug==TRUE ){
-            print("made it here (0)")
+            write("made it here (0)", file=log, append=FALSE)
             TEST.file_list <<- file_list
         }
         if ( length(file_list) > 0 ){
@@ -31,7 +31,7 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         
         # data type needs to be reformatted for the url
         data_type_url <- url_encode(data_type)
-        if( debug==TRUE ){ print("made it here (1)") }
+        if( debug==TRUE ){ write("made it here (1)", file=log, append=TRUE) }
         
         # create output name or use default
         data_type_filename <- gsub(" ", "", data_type)  
@@ -40,26 +40,26 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         }else{
             output_filename <- output
         }
-        if( debug==TRUE ){ print("made it here (2)") }
+        if( debug==TRUE ){ write("made it here (2)", file=log, append=TRUE) }
         
         print(paste("Starting", p))
-        if( debug==TRUE ){ print("made it here (4)") }
+        if( debug==TRUE ){ write("made it here (3)", file=log, append=TRUE) }
 
         my_call <- paste0("https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22", data_type_url,"%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.project.project_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22", p, "%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D")
         if( debug==TRUE ){
-            print("made it here (5)")
+            write("made it here (4)", file=log, append=TRUE)
             TEST.my_call <<- my_call
         }
         
         my_call.json <- fromJSON(getURL(my_call))
         if( debug==TRUE ){
-            print("made it here (6)")
+            write("made it here (5)", file=log, append=TRUE)
             TEST.my_call.json <<- my_call.json
         }
         
         UUID.list <- unlist(my_call.json$data$hits)
         if( debug==TRUE ){
-            print("made it here (7)")
+            write("made it here (6)", file=log, append=TRUE)
             TEST.UUID.list <<- UUID.list
         }
         
@@ -73,7 +73,7 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         print(paste("Done downloading", p))
     }
 
-    if( debug==TRUE ){ print("made it here (8)") }
+    if( debug==TRUE ){ write("made it here (7)", file=log, append=TRUE) }
     
     # merge files into a matrix file, delete the intermediates
     ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
@@ -85,6 +85,7 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
     file_count <- 0
     # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
     for ( i in file_list ){
+        if( debug==TRUE ){ write("made it here (8)", file=log, append=TRUE) }
         if ( file_count==0 ){
             input_matrix <- import_metadata( i )
             column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
@@ -92,7 +93,7 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
             file_count =+ 1
         }else{
             if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
-            
+            input_matrix <- import_metadata( i )
             column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
             if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
                 if( debug==TRUE ){
@@ -113,23 +114,28 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
     }
     tictoc::toc()
 
-    if( debug==TRUE ){ print("made it here (9)") }
+    if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
     
     # add the column names
     colnames(output_matrix) <- column_names
-    if( debug==TRUE ){ print("made it here (10)") }
+    if( debug==TRUE ){
+        write("made it here (10)", file=log, append=TRUE)
+        TEST.column_names <<- column_names
+    }
 
     
     # sort rows and columns
     # order rows
     ordered_colnames <- order(colnames(output_matrix))
     output_matrix <- output_matrix[,ordered_colnames]
-    if( debug==TRUE ){ print("made it here (11)") }
+    #colnames(output_matrix) <- colnames(output_matrix)[ordered_colnames]
+    if( debug==TRUE ){ write("made it here (11)", file=log, append=TRUE) }
     
      # order columns
     ordered_rownames <- order(rownames(output_matrix))
     output_matrix <- output_matrix[ordered_rownames,]
-    if( debug==TRUE ){ print("made it here (12)") }
+    #rownames(output_matrix) <- rownames(output_matrix)[ordered_rownames]
+    if( debug==TRUE ){ write("made it here (12)", file=log, append=TRUE) }
     
     print(paste("Done merging", p))
 
