@@ -1,6 +1,28 @@
 project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"), rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"), cleanup=TRUE, debug=FALSE, log="my_log.txt"){
-    
+
+    ## selected_projects <- c(
+    ##     "TCGA-BRCA",
+    ##     "TCGA-COAD",
+    ##     "TCGA-HNSC",
+    ##     "TCGA-KICH",
+    ##     "TCGA-KIRC",
+    ##     "TCGA-KIRP",
+    ##     "TCGA-LIHC",
+    ##     "TCGA-LUAD",
+    ##     "TCGA-LUSC",
+    ##     "TCGA-UCEC",
+    ##     "TCGA-BLCA"
+    ## )
+   
+    ## test_projects <- c(
+    ##     "TCGA-CHOL",
+    ##     "TCGA-ESCA"
+    ## )
+     
     # project_download_and_merge_data("TCGA-CHOL", cleanup=FALSE, debug=TRUE)
+    # project_download_and_merge_data(test_projects, cleanup=TRUE, debug=TRUE)
+    
+    write(paste( "Begin log", date() ), file=log, append=FALSE)
     
     # make sure packages in list are installed and sourced
     for (i in package_list){
@@ -15,10 +37,12 @@ project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts"
 download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, cleanup, debug, log){ ### 11-29-16
     for (p in projects) {
 
+        if( debug==TRUE ){ write(paste("Processing:", p), file=log, append=TRUE) }
+        
         # delete any pre-exisiting count files
         file_list <- dir(pattern=".htseq.counts.gz$")
         if( debug==TRUE ){
-            write("made it here (0)", file=log, append=FALSE)
+            write("made it here (0)", file=log, append=TRUE)
             TEST.file_list <<- file_list
         }
         if ( length(file_list) > 0 ){
@@ -26,8 +50,6 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
                 unlink( i )
             }
         }
-
-        #break
         
         # data type needs to be reformatted for the url
         data_type_url <- url_encode(data_type)
@@ -45,6 +67,9 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         print(paste("Starting", p))
         if( debug==TRUE ){ write("made it here (3)", file=log, append=TRUE) }
 
+        tictoc::toc()
+        
+        # get the list of files for the project
         my_call <- paste0("https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22", data_type_url,"%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.project.project_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22", p, "%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D")
         if( debug==TRUE ){
             write("made it here (4)", file=log, append=TRUE)
@@ -70,94 +95,100 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
                          "'",
                          sep=""))
         }
-        print(paste("Done downloading", p))
-    }
+        write(paste("Done downloading", p), file=log, append=TRUE)
+        elapsed_time <- tictoc::toc()
+        write(paste("Download time: ", elapsed_time), file=log, append=TRUE)
 
-    if( debug==TRUE ){ write("made it here (7)", file=log, append=TRUE) }
+        
+        if( debug==TRUE ){ write("made it here (7)", file=log, append=TRUE) }
     
-    # merge files into a matrix file, delete the intermediates
-    ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
-    tictoc::toc()
-    print(paste("Merging files from", p))
-    file_list <- dir(pattern=".htseq.counts.gz$")
-    output_matrix <- matrix()
-    column_names <- vector(mode="character")
-    file_count <- 0
-    # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
-    for ( i in file_list ){
-        if( debug==TRUE ){ write("made it here (8)", file=log, append=TRUE) }
-        if ( file_count==0 ){
-            input_matrix <- import_metadata( i )
-            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
-            output_matrix <- input_matrix
-            file_count =+ 1
-        }else{
-            if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
-            input_matrix <- import_metadata( i )
-            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
-            if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
-                if( debug==TRUE ){
-                    print("rownames identical")
-                    my_dim <- dim(output_matrix)
-                    print(my_dim)
-                }
-                output_matrix <- cbind(output_matrix, input_matrix)
+        # merge files into a matrix file, delete the intermediates
+        ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
+        tictoc::toc()
+        write(paste("Merging files from", p), file=log, append=TRUE)
+        file_list <- dir(pattern=".htseq.counts.gz$")
+        output_matrix <- matrix()
+        column_names <- vector(mode="character")
+        file_count <- 0
+        # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
+        for ( i in file_list ){
+            if( debug==TRUE ){ write("made it here (8)", file=log, append=TRUE) }
+            if ( file_count==0 ){
+                input_matrix <- import_metadata( i )
+                column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+                output_matrix <- input_matrix
+                file_count =+ 1
             }else{
-                output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
-                if( debug==TRUE ){
-                    print("rownames NOT identical")
-                    my_dim <- dim(output_matrix)
-                    print(my_dim)
+                if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
+                input_matrix <- import_metadata( i )
+                column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+                if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
+                    if( debug==TRUE ){
+                        print("rownames identical")
+                        my_dim <- dim(output_matrix)
+                        print(my_dim)
+                    }
+                    output_matrix <- cbind(output_matrix, input_matrix)
+                }else{
+                    output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                    if( debug==TRUE ){
+                        print("rownames NOT identical")
+                        my_dim <- dim(output_matrix)
+                        print(my_dim)
+                    }
                 }
             }
         }
-    }
-    tictoc::toc()
-
-    if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
+        elapsed_time <- tictoc::toc()
+        write(paste("Merge time: ", elapsed_time), file=log, append=TRUE)
+        
+        
+        if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
     
-    # add the column names
-    colnames(output_matrix) <- column_names
-    if( debug==TRUE ){
-        write("made it here (10)", file=log, append=TRUE)
-        TEST.column_names <<- column_names
-    }
+        # add the column names
+        colnames(output_matrix) <- column_names
+        if( debug==TRUE ){
+            write("made it here (10)", file=log, append=TRUE)
+            TEST.column_names <<- column_names
+        }
 
     
-    # sort rows and columns
-    # order rows
-    ordered_colnames <- order(colnames(output_matrix))
-    output_matrix <- output_matrix[,ordered_colnames]
-    #colnames(output_matrix) <- colnames(output_matrix)[ordered_colnames]
-    if( debug==TRUE ){ write("made it here (11)", file=log, append=TRUE) }
+        # sort rows and columns
+        # order rows
+        ordered_colnames <- order(colnames(output_matrix))
+        output_matrix <- output_matrix[,ordered_colnames]
+        #colnames(output_matrix) <- colnames(output_matrix)[ordered_colnames]
+        if( debug==TRUE ){ write("made it here (11)", file=log, append=TRUE) }
     
-     # order columns
-    ordered_rownames <- order(rownames(output_matrix))
-    output_matrix <- output_matrix[ordered_rownames,]
-    #rownames(output_matrix) <- rownames(output_matrix)[ordered_rownames]
-    if( debug==TRUE ){ write("made it here (12)", file=log, append=TRUE) }
+        # order columns
+        ordered_rownames <- order(rownames(output_matrix))
+        output_matrix <- output_matrix[ordered_rownames,]
+        #rownames(output_matrix) <- rownames(output_matrix)[ordered_rownames]
+        if( debug==TRUE ){ write("made it here (12)", file=log, append=TRUE) }
     
-    print(paste("Done merging", p))
+        print(paste("Done merging", p))
 
-    # remove selected rows
-    for ( i in rows_to_remove ) {
-        output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
-    }
+        # remove selected rows
+        for ( i in rows_to_remove ) {
+            output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+        }
 
-    # export merged data
-    export_data(output_matrix, output_filename)
+        # export merged data
+        export_data(output_matrix, output_filename)
 
-    # cleanup
-    if( cleanup==TRUE ){
-        if ( length(file_list) > 0 ){
-            for ( i in file_list){
-                unlink( i )
+        # cleanup
+        if( cleanup==TRUE ){
+            file_list <- dir(pattern=".htseq.counts.gz$")
+            if ( length(file_list) > 0 ){
+                for ( i in file_list){
+                    unlink( i )
+                }
             }
         }
-    }
     
-}
+    }
 
+}
 
 
 # function to combine input from the inividually download matrices
