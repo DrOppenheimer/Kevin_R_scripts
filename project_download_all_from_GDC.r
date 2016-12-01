@@ -68,7 +68,8 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         print(paste("Starting", p))
         if( debug==TRUE ){ write("made it here (3)", file=log, append=TRUE) }
 
-        tictoc::toc()
+        # download time (start)
+        tictoc::tic()
         
         # get the list of files for the project
         my_call <- paste0("https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22", data_type_url,"%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.project.project_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22", p, "%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D")
@@ -97,6 +98,7 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
                          sep=""))
         }
         write(paste("Done downloading", p), file=log, append=TRUE)
+        # download time (end)
         elapsed_time <- tictoc::toc()
         write(paste("Download time: ", elapsed_time), file=log, append=TRUE)
 
@@ -105,7 +107,8 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
     
         # merge files into a matrix file, delete the intermediates
         ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
-        tictoc::toc()
+        # merge time (start)
+        tictoc::tic()
         write(paste("Merging files from", p), file=log, append=TRUE)
         file_list <- dir(pattern=".htseq.counts.gz$")
         output_matrix <- matrix()
@@ -140,9 +143,9 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
                 }
             }
         }
+        # merge time (end)
         elapsed_time <- tictoc::toc()
         write(paste("Merge time: ", elapsed_time), file=log, append=TRUE)
-        
         
         if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
     
