@@ -100,7 +100,8 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         write(paste("Done downloading", p), file=log, append=TRUE)
         # download time (end)
         elapsed_time <- tictoc::toc()
-        write(paste("Download time: ", elapsed_time$toc), file=log, append=TRUE)
+        elapsed_time <- elapsed_time$toc - elapsed_time$tic
+        write(paste("Download time: ", elapsed_time), file=log, append=TRUE)
 
         
         if( debug==TRUE ){ write("made it here (7)", file=log, append=TRUE) }
@@ -145,7 +146,8 @@ download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, c
         }
         # merge time (end)
         elapsed_time <- tictoc::toc()
-        write(paste("Merge time: ", elapsed_time$toc), file=log, append=TRUE)
+        elapsed_time <- elapsed_time$toc - elapsed_time$tic
+        write(paste("Merge time: ", elapsed_time), file=log, append=TRUE)
         
         if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
     
