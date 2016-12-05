@@ -1,0 +1,588 @@
+    ## selected_projects <- c(
+    ##     "TCGA-BRCA",
+    ##     "TCGA-COAD",
+    ##     "TCGA-HNSC",
+    ##     "TCGA-KICH",
+    ##     "TCGA-KIRC",
+    ##     "TCGA-KIRP",
+    ##     "TCGA-LIHC",
+    ##     "TCGA-LUAD",
+    ##     "TCGA-LUSC",
+    ##     "TCGA-UCEC",
+    ##     "TCGA-BLCA"
+    ## )
+   
+    test_projects <- c(
+        "TCGA-CHOL",
+        "TCGA-ESCA"
+    )
+
+
+get_project_UUIDs <- function(
+    projects,
+    data_type="HTSeq - Counts",
+    package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
+    cleanup=TRUE,
+    debug=FALSE,
+    log="default",
+    write_to_file = TRUE,
+    output_filename = "default"
+)
+{
+
+    ### SUBS ###
+
+    # function to export UUIDs
+    export_UUIDs <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = FALSE, row.names = FALSE, quote = FALSE, eol="\n")
+    }
+
+    ### MAIN ###
+    
+    # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    
+    # create the log file
+    if( identical(log, "default")==TRUE ){
+        log_filename <- paste0("get_UUID_log.", my_timestamp, ".txt")
+    }else{
+        log_filename <- log
+    }
+
+    # make sure packages in list are installed and sourced
+    for (i in package_list){
+        if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
+        library(i,character.only = TRUE)
+    }
+    
+    # data type needs to be reformatted for the url
+    data_type_url <- url_encode(data_type)
+    if( debug==TRUE ){ write("made it here (1)", file=log, append=TRUE) }
+
+    # create list to hold the UUIDs
+    UUID_list <- vector(mode="character")
+
+    for ( p in projects ){
+
+        # create API call to get the UUIDs
+        my_call <- paste0("https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22", data_type_url,"%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.project.project_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22", p, "%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D")
+
+        my_call.json <- fromJSON(getURL(my_call))        
+        project.UUID_list <- unlist(my_call.json$data$hits)
+        UUID_list <- c(UUID_list, project.UUID_list)
+
+    }
+
+    # write the list of UUIDs to a file or return as vector
+    if( write_to_file ==TRUE){
+
+        if( identical(output_filename, "default") ){
+            output_filename <- paste0("UUID_list.", my_timestamp, ".txt")
+        }else{
+            output_filename <- output_filename
+        }
+
+        export_UUIDs(UUID_list, output_filename)
+            
+    }else{
+        return(UUID_list)
+    }
+    
+}
+
+
+
+
+
+
+
+download_and_merge_data_from_UUID <- function(
+    UUID_list,
+    output_prefix = "my_merged_data",
+    list_is_file=TRUE,
+    package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
+    rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
+    dl_file_pattern=".htseq.counts.gz$",
+    cleanup=TRUE,
+    log="default",
+    debug=FALSE
+    
+){
+
+    ### SUBS ###
+
+    # function to import data or metadata -- does not alter non-numerical data 
+    import_metadata <- function(group_table){ #, group_column, sample_names){
+        metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+            read.table(
+                file=group_table,row.names=1,header=FALSE,sep="\t",
+                colClasses = "character", check.names=FALSE,
+                comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+            )
+        )
+    }
+    
+    # function to export data
+    export_data <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+    }
+
+    ### MAIN ###
+    
+    # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    
+    # create the log file
+    if( identical(log, "default")==TRUE ){
+        log_filename <- paste0("download_and_merge_data_from_UUID_log.", my_timestamp, ".txt", sep="")
+    }else{
+        log_filename <- log
+    }
+
+    # make sure packages in list are installed and sourced
+    for (i in package_list){
+        if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
+        library(i,character.only = TRUE)
+    }
+
+    # get the UUID list from file or vector
+    if( list_is_file==TRUE ){
+        UUID_list_filename <- UUID_list
+        UUID_list <- scan(file=UUID_list, what="character")
+    }else{
+        UUID_list <- list
+        UUID_list_filename <- "UUID_list"
+    }
+
+    # create filename for the output
+    output_filename <- paste0(output_prefix, ".", my_timestamp, ".txt")
+
+    # delete any pre-exisiting count files
+    write(paste0("Deleting any previous files with pattern = ", dl_file_pattern), file=log_filename, append=FALSE)
+    file_list <- dir(pattern=dl_file_pattern)
+    if( debug==TRUE ){
+        write("made it here (0)", file=log, append=TRUE)
+        TEST.file_list <<- file_list
+    }
+    if ( length(file_list) > 0 ){
+        for ( i in file_list){
+            unlink( i )
+        }
+    }
+    
+    # download the individual files
+    elapsed_time <- tictoc::tic()
+    for(UUID in UUID_list) { # check this part - file returned has its own UUID - agrees for data and metadata, but is not same as UUID in list here (UUID.list)
+        if( file.exists("curl_log.txt")==TRUE ){ unlink("curl_log.txt") } 
+        system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+                     UUID,
+                     "'",
+                     " > curl_log.txt",
+                     sep=""))
+        filename_temp <- scan(file="curl_log.txt", what="character")
+        UUID_filename <- filename_temp[5]
+        write(paste0("Done downloading file with UUID :: ", UUID, " and FILENAME :: ", UUID_filename), file=log_filename, append=TRUE)
+    }
+    elapsed_time <- tictoc::toc()
+    elapsed_time <- elapsed_time$toc - elapsed_time$tic
+    write(paste("Download time: ", elapsed_time), file=log_filename, append=TRUE)
+
+    # merge files into a single table
+    elapsed_time <- tictoc::tic()
+    write(paste("Merging files"), file=log_filename, append=TRUE)
+    file_list <- dir(pattern=dl_file_pattern)
+    output_matrix <- matrix()
+    column_names <- vector(mode="character")
+    file_count <- 0
+    # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
+    for ( i in file_list ){
+        if ( file_count==0 ){
+            write(paste0("Starting merge with :: ", i), file=log_filename, append=TRUE)
+            input_matrix <- import_metadata( i )
+            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            if( debug==TRUE ){
+                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
+            }
+            output_matrix <- input_matrix
+            file_count =+ 1
+        }else{
+            input_matrix <- import_metadata( i )
+            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE ){
+                write("rownames identical", file=log_filename, append=TRUE)
+                write(paste0("Merging (with cbind) :: ", i), file=log_filename, append=TRUE)
+                output_matrix <- cbind(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }else{
+                write("rownames NOT identical", file=log_filename, append=TRUE)
+                write(paste0("Merging (with combine_matrices_by_column/merge) :: ", i), file=log_filename, append=TRUE)
+                output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }
+        }
+    }
+
+    # add the column names
+    colnames(output_matrix) <- column_names
+    
+    # order rows
+    ordered_colnames <- order(colnames(output_matrix))
+    output_matrix <- output_matrix[,ordered_colnames]
+        
+    # order columns
+    ordered_rownames <- order(rownames(output_matrix))
+    output_matrix <- output_matrix[ordered_rownames,]
+    
+    # remove selected rows
+    for ( i in rows_to_remove ) {
+        output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+    }
+
+    # merge time (end)
+    elapsed_time <- tictoc::toc()
+    elapsed_time <- elapsed_time$toc - elapsed_time$tic
+    write(paste("Merge time: ", elapsed_time), file=log_filename, append=TRUE)
+
+    # export the merged data
+    export_data(output_matrix,output_filename)
+    write(paste0("Wrote files imported from ", UUID_list_filename, " and wrote them to ", output_filename), file=log_filename, append=TRUE)
+                                   
+    # cleanup
+    if( cleanup==TRUE ){
+        file_list <- dir(pattern=".htseq.counts.gz$")
+        if ( length(file_list) > 0 ){
+            for ( i in file_list){
+                unlink( i )
+            }
+        }
+        write("Performed cleanup", file=log_filename, append=TRUE)
+    }else{
+        write("Cleanup was disabled", file=log_filename, append=TRUE)
+    }
+
+    write("DONE", file=log_filename, append=TRUE)
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual")
+    
+
+
+
+
+
+get_mapping_options <- function(){
+  #returns a vector of endpoints under mapping/expand
+  system("curl 'https://gdc-api.nci.nih.gov/cases/_mapping' > mapping_JSON.txt")
+  endpoints <- fromJSON("mapping_JSON.txt")["expand"]
+  #print(endpoints)
+  nodes <- c()
+  for (i in 1:length(endpoints$expand)){
+    a <- unlist(as.vector(strsplit(endpoints$expand[i],"\\.")))
+    nodes <- c(nodes,a[1])
+  }
+  nodes <- unique(nodes)
+  return(nodes)
+}
+
+
+
+
+project_download_and_merge_data <- function(projects, data_type="HTSeq - Counts", package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"), rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"), cleanup=TRUE, debug=FALSE, log="my_log.txt"){
+
+    ## selected_projects <- c(
+    ##     "TCGA-BRCA",
+    ##     "TCGA-COAD",
+    ##     "TCGA-HNSC",
+    ##     "TCGA-KICH",
+    ##     "TCGA-KIRC",
+    ##     "TCGA-KIRP",
+    ##     "TCGA-LIHC",
+    ##     "TCGA-LUAD",
+    ##     "TCGA-LUSC",
+    ##     "TCGA-UCEC",
+    ##     "TCGA-BLCA"
+    ## )
+   
+    ## test_projects <- c(
+    ##     "TCGA-CHOL",
+    ##     "TCGA-ESCA"
+    ## )
+     
+    # project_download_and_merge_data("TCGA-CHOL", cleanup=FALSE, debug=TRUE)
+    # project_download_and_merge_data(test_projects, cleanup=TRUE, debug=TRUE)
+    # project_download_and_merge_data(selected_projects, cleanup=TRUE, debug=TRUE)
+    
+    write(paste( "Begin log", date() ), file=log, append=FALSE)
+    
+    # make sure packages in list are installed and sourced
+    for (i in package_list){
+        if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
+        library(i,character.only = TRUE)
+    }
+   
+    # download the data
+    download_all_from_GDC(projects, data_type, output="default", rows_to_remove=rows_to_remove, cleanup=cleanup, debug=debug, log=log) 
+}
+
+download_all_from_GDC <- function(projects, data_type, output, rows_to_remove, cleanup, debug, log){ ### 11-29-16
+    for (p in projects) {
+
+        if( debug==TRUE ){ write(paste("Processing:", p), file=log, append=TRUE) }
+        
+        # delete any pre-exisiting count files
+        file_list <- dir(pattern=".htseq.counts.gz$")
+        if( debug==TRUE ){
+            write("made it here (0)", file=log, append=TRUE)
+            TEST.file_list <<- file_list
+        }
+        if ( length(file_list) > 0 ){
+            for ( i in file_list){
+                unlink( i )
+            }
+        }
+        
+        # data type needs to be reformatted for the url
+        data_type_url <- url_encode(data_type)
+        if( debug==TRUE ){ write("made it here (1)", file=log, append=TRUE) }
+        
+        # create output name or use default
+        data_type_filename <- gsub(" ", "", data_type)  
+        if( identical( output, "default" )==TRUE ){
+            output_filename=paste(p, ".merged.", data_type_filename, ".txt", sep="", collapse="")
+        }else{
+            output_filename <- output
+        }
+        if( debug==TRUE ){ write("made it here (2)", file=log, append=TRUE) }
+        
+        print(paste("Starting", p))
+        if( debug==TRUE ){ write("made it here (3)", file=log, append=TRUE) }
+
+        # download time (start)
+        tictoc::tic()
+        
+        # get the list of files for the project
+        my_call <- paste0("https://gdc-api.nci.nih.gov/files?fields=file_id&size=99999&pretty=true&filters=%7B%0D%0A%09%22op%22%3A%22and%22%2C%0D%0A%09%22content%22%3A%5B%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22analysis.workflow_type%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22", data_type_url,"%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22in%22%2C%0D%0A%09%09%22content%22%3A%7B%0D%0A%09%09%09%22field%22%3A%22files.data_format%22%2C%0D%0A%09%09%09%22value%22%3A%5B%22TXT%22%5D%0D%0A%09%09%09%7D%0D%0A%09%09%7D%2C%7B%0D%0A%09%09%22op%22%3A%22%3D%22%2C%0D%0A%09++++%22content%22%3A%7B%0D%0A%09++++%09%22field%22%3A%22cases.project.project_id%22%2C%0D%0A%09++++%09%22value%22%3A%5B%22", p, "%22%5D%0D%0A%09++++%7D%0D%0A%09%7D%5D%0D%0A%7D")
+        if( debug==TRUE ){
+            write("made it here (4)", file=log, append=TRUE)
+            TEST.my_call <<- my_call
+        }
+        
+        my_call.json <- fromJSON(getURL(my_call))
+        if( debug==TRUE ){
+            write("made it here (5)", file=log, append=TRUE)
+            TEST.my_call.json <<- my_call.json
+        }
+        
+        UUID.list <- unlist(my_call.json$data$hits)
+        if( debug==TRUE ){
+            write("made it here (6)", file=log, append=TRUE)
+            TEST.UUID.list <<- UUID.list
+        }
+        
+        for(i in UUID.list) { # check this part - file returned has its own UUID - agrees for data and metadata, but is not same as UUID in list here (UUID.list)
+            write(paste0(i, ": ", i), file=log_filename, append=TRUE)
+            system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+                         i,
+                         "'",
+                         sep=""))
+        }
+        # download time (end)
+        elapsed_time <- tictoc::toc()
+        elapsed_time <- elapsed_time$toc - elapsed_time$tic
+        write(paste("Download time: ", elapsed_time), file=log, append=TRUE)
+
+        
+        if( debug==TRUE ){ write("made it here (7)", file=log, append=TRUE) }
+    
+        # merge files into a matrix file, delete the intermediates
+        ###file_list <- paste(UUID.list, ".htseq.counts.gz", sep="")
+        # merge time (start)
+        tictoc::tic()
+        write(paste("Merging files from", p), file=log, append=TRUE)
+        file_list <- dir(pattern=".htseq.counts.gz$")
+        output_matrix <- matrix()
+        column_names <- vector(mode="character")
+        file_count <- 0
+        # merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
+        for ( i in file_list ){
+            if( debug==TRUE ){ write("made it here (8)", file=log, append=TRUE) }
+            if ( file_count==0 ){
+                input_matrix <- import_metadata( i )
+                column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+                output_matrix <- input_matrix
+                file_count =+ 1
+            }else{
+                if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
+                input_matrix <- import_metadata( i )
+                column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+                if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
+                    if( debug==TRUE ){
+                        print("rownames identical")
+                        my_dim <- dim(output_matrix)
+                        print(my_dim)
+                    }
+                    output_matrix <- cbind(output_matrix, input_matrix)
+                }else{
+                    output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                    if( debug==TRUE ){
+                        print("rownames NOT identical")
+                        my_dim <- dim(output_matrix)
+                        print(my_dim)
+                    }
+                }
+            }
+        }
+        # merge time (end)
+        elapsed_time <- tictoc::toc()
+        elapsed_time <- elapsed_time$toc - elapsed_time$tic
+        write(paste("Merge time: ", elapsed_time), file=log, append=TRUE)
+        
+        if( debug==TRUE ){ write("made it here (9)", file=log, append=TRUE) }
+    
+        # add the column names
+        colnames(output_matrix) <- column_names
+        if( debug==TRUE ){
+            write("made it here (10)", file=log, append=TRUE)
+            TEST.column_names <<- column_names
+        }
+
+    
+        # sort rows and columns
+        # order rows
+        ordered_colnames <- order(colnames(output_matrix))
+        output_matrix <- output_matrix[,ordered_colnames]
+        #colnames(output_matrix) <- colnames(output_matrix)[ordered_colnames]
+        if( debug==TRUE ){ write("made it here (11)", file=log, append=TRUE) }
+    
+        # order columns
+        ordered_rownames <- order(rownames(output_matrix))
+        output_matrix <- output_matrix[ordered_rownames,]
+        #rownames(output_matrix) <- rownames(output_matrix)[ordered_rownames]
+        if( debug==TRUE ){ write("made it here (12)", file=log, append=TRUE) }
+    
+        print(paste("Done merging", p))
+
+        # remove selected rows
+        for ( i in rows_to_remove ) {
+            output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+        }
+
+        # export merged data
+        export_data(output_matrix, output_filename)
+
+        # cleanup
+        if( cleanup==TRUE ){
+            file_list <- dir(pattern=".htseq.counts.gz$")
+            if ( length(file_list) > 0 ){
+                for ( i in file_list){
+                    unlink( i )
+                }
+            }
+        }
+    
+    }
+
+}
+
+
+# function to combine input from the inividually download matrices
+combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FALSE, pseudo_fudge=10000, na_2=NA, from_file=FALSE, order_rows=FALSE, order_columns=FALSE, merge_sort=FALSE){
+    # import data from file if that option is selected
+    if(from_file==TRUE){
+        matrix1<-import_metadata(matrix1)
+        matrix2<-import_metadata(matrix2)
+    }
+    # perform the merge
+    comb_matrix<- merge(matrix1, matrix2, by="row.names", all=TRUE, sort=merge_sort)
+    # undo garbage formatting that merge introduces
+    rownames(comb_matrix) <- comb_matrix$Row.names
+    comb_matrix$Row.names <- NULL
+    colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
+    if ( is.na(na_2)==FALSE ){
+        comb_matrix[is.na(comb_matrix)] <- na_2 # replace NA with pseudo_count
+    }
+    if ( use_fudge==TRUE ){
+        pseudo_count <- min(comb_matrix, na.rm=TRUE)/pseudo_fudge # find the min real value; that num/pseudo_fudge = pseudo_count value
+        comb_matrix[is.na(comb_matrix)] <- pseudo_count # replace NA with pseudo_count
+    }
+    # order rows
+    if( order_rows==TRUE){
+        ordered_rownames <- order(rownames(comb_matrix))
+        comb_matrix <- comb_matrix[ordered_rownames,]
+    }
+    # order columns
+    if( order_columns==TRUE){
+        ordered_colnames <- order(colnames(comb_matrix))
+        comb_matrix <- comb_matrix[,ordered_colnames]
+    }
+    if( is.na(export)==FALSE ){
+        output_name <- gsub(" ", "", paste(export, ".merged_data.txt"))
+        export_data(comb_matrix, output_name)
+    }
+    return(comb_matrix)
+}
+
+
+
+# function to import data and metadata --- better than old import_data as it can hand numerical and nominal data
+import_metadata <- function(group_table){ #, group_column, sample_names){
+    metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+        read.table(
+            file=group_table,row.names=1,header=FALSE,sep="\t",
+            colClasses = "character", check.names=FALSE,
+            comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+        )
+    )
+}
+
+
+
+# function to export data
+export_data <- function(data_object, file_name){
+  write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+}
+
+
+## http://stackoverflow.com/questions/29820029/how-to-combine-multiple-matrix-frames-into-one-using-r
+## m1 <- matrix(c('tp53','apc','c1','c2'),2);
+## m2 <- matrix(c('tp53','col2a1','d1','d2'),2);
+## m3 <- matrix(c('tp53','wt1','e1','e2'),2);
+## m <- Reduce(function(x,y) merge(x,y,1,all=T),list(m1,m2,m3));
+## m;
+## ##       V1 V2.x V2.y   V2
+## ## 1    apc   c2 <NA> <NA>
+## ## 2   tp53   c1   d1   e1
+## ## 3 col2a1 <NA>   d2 <NA>
+## ## 4    wt1 <NA> <NA>   e2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
