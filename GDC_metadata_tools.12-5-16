@@ -18,6 +18,52 @@
     )
 
 
+combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
+
+    # perform the merge
+    comb_matrix<- merge(data.frame(matrix1), data.frame(matrix2), by="row.names", all=TRUE)
+    if(func_debug==TRUE){
+        print("Made it here (3.6.1)")
+        print(paste("MATRIX_1", dim(matrix1)))
+        print(paste("MATRIX_2",dim(matrix2)))
+        print(paste("MATRIX_C",dim(comb_matrix)))
+        #print(colnames(matrix1))
+        #print(colnames(matrix2))
+        matrix3 <<- comb_matrix
+    }
+    
+    # undo garbage formatting that merge introduces
+    rownames(comb_matrix) <- comb_matrix$Row.names
+    comb_matrix$Row.names <- NULL
+
+    matrix4 <<- comb_matrix
+
+    #if(func_debug==TRUE){print(paste("MATRIX DIM:", dim(comb_matrix)))}
+    colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
+    #if(func_debug==TRUE){print("Made it here (3.6.2)")}
+    
+    # order columns
+    if( func_order_rows==TRUE){
+        ordered_rownames <- order(rownames(comb_matrix))
+        comb_matrix <- comb_matrix[ordered_rownames,]
+    }
+    #if(func_debug==TRUE){print("Made it here (3.6.3)")}
+
+    # order rows
+    if( func_order_columns==TRUE){
+        ordered_colnames <- order(colnames(comb_matrix))
+        comb_matrix <- comb_matrix[,ordered_colnames]
+    }
+    #if(func_debug==TRUE){print("Made it here (3.6.4)")}
+
+    #if(func_debug==TRUE){ matrix5 <<- comb_matrix }
+
+    comb_matrix <- as.matrix(comb_matrix)
+    
+    return(comb_matrix)
+}
+
+
 get_project_UUIDs <- function(
     projects,
     data_type="HTSeq - Counts",
@@ -50,7 +96,7 @@ get_project_UUIDs <- function(
     }
 
     # make sure packages in list are installed and sourced
-    for (i in package_list){
+    download    for (i in package_list){
         if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
         library(i,character.only = TRUE)
     }
@@ -98,7 +144,7 @@ get_project_UUIDs <- function(
 
 download_and_merge_data_from_UUID <- function(
     UUID_list,
-    output_prefix = "my_merged_data",
+    output_prefix = "my_merged_DATA",
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
     rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
@@ -126,7 +172,7 @@ download_and_merge_data_from_UUID <- function(
     export_data <- function(data_object, file_name){
         write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
     }
-
+    
     ### MAIN ###
     
     # create a timestamp
@@ -271,9 +317,453 @@ download_and_merge_data_from_UUID <- function(
 
 
 
+download_and_merge_metadata_from_UUID <- function(
+    UUID_list,
+    #expand_list = ("default",   #"cases.samples,cases.diagnoses,cases.exposures,cases.diagnoses.treatments,cases.summary.data_categories,cases.summary.experimental_strategies,analysis.input_files,analysis.input_files,analysis.input_files,cases.annotations,cases.family_histories,cases.samples.portions")
+    output_prefix = "my_merged_METAdata",
+    list_is_file=TRUE,
+    package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc", "matlab"),
+    rows_to_remove=c("pagination.count", "pagination.from", "pagination.page", "pagination.pages", "pagination.size", "pagination.sort", "pagination.total"),
+    #dl_file_pattern=".htseq.counts.gz$",
+    #cleanup=TRUE,
+    log="default",
+    rot_90=TRUE,
+    debug=FALSE
+    
+){
+
+    ### SUBS ###
+
+    # function to import data or metadata -- does not alter non-numerical data 
+    import_metadata <- function(group_table){ #, group_column, sample_names){
+        metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+            read.table(
+                file=group_table,row.names=1,header=FALSE,sep="\t",
+                colClasses = "character", check.names=FALSE,
+                comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+            )
+        )
+    }
+    
+    # function to export data
+    export_data <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+    }
+
+    # function to flatten metadata json into a much simpler list
+    flatten_list <- function(some_list){
+        flat_list <- unlist(some_list)
+        flat_list <- gsub("\r","",flat_list)
+        flat_list <- gsub("\n","",flat_list)
+        flat_list <- gsub("\t","",flat_list)
+    }
+
+    get_mapping <- function(mapping="https://gdc-api.nci.nih.gov/files/_mapping"){
+        my_call.json <- fromJSON(getURL(mapping))
+        default_expand <- my_call.json$expand
+        expand_list <- paste(unlist(default_expand), collapse=",")
+        default_fields <- my_call.json$fields
+        fields_list <- paste(unlist(default_expand), collapse=",")
+        my_mapping <- list("expand_list" = expand_list, "fields_list" = fields_list)
+        return(my_mapping)
+    }
+
+
+    
+    ### MAIN ###
+    
+    # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    
+    # create the log file
+    if( identical(log, "default")==TRUE ){
+        log_filename <- paste0("download_and_merge_METAdata_from_UUID_log.", my_timestamp, ".txt", sep="")
+    }else{
+        log_filename <- log
+    }
+
+    # make sure packages in list are installed and sourced
+    for (i in package_list){
+        if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
+        library(i,character.only = TRUE)
+    }
+
+    # get the UUID list from file or vector
+    if( list_is_file==TRUE ){
+        UUID_list_filename <- UUID_list
+        UUID_list <- scan(file=UUID_list, what="character")
+    }else{
+        UUID_list <- UUID_list
+        UUID_list_filename <- "UUID_list"
+    }
+
+    # create filename for the output
+    output_filename <- paste0(output_prefix, ".", my_timestamp, ".txt")
+
+    # get the mapping
+    mapping <- get_mapping()
+    
+    # get the metadata and merge into a single table
+    elapsed_time <- tictoc::tic()
+    write(paste("Retireving metadata"), file=log_filename, append=TRUE)
+    output_matrix <- matrix()
+    column_names <- vector(mode="character")
+    first_UUID=TRUE
+
+    for ( UUID in UUID_list) { 
+
+        my_call <- paste0(
+            "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+            UUID,
+            "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&defaults&expand=",
+            mapping$expand_list,
+            "&fields=",
+            mapping$fields_list
+            )
+        my_call.json <- fromJSON(getURL(my_call))
+        missing_fields <- my_call.json$warnings # this will be added to an optional debug log
+        populated_fields <- my_call.json$data
+        flat_metadata_list <- flatten_list(my_call.json$data)
+
+        # loop in here to check to make sure that redundnat metadata keys have the same values -- elements: 
+       
+        # duplicated elements: flat_metadata_list[ duplicated(names(flat_metadata_list)) ]
+        # unique elements: flat_metadata_list[ unique(names(flat_metadata_list)) ]
+        # check if values are unique: flat_metadata_list[ names(flat_metadata_list)=="hits.cases.samples.portions.slides.updated_datetime" ]
+
+        # Assuming that duplicated keys have the same values:
+
+        unique_metadata_names <- unique(names(flat_metadata_list))
+        unique_metadata_list <- flat_metadata_list[ unique_metadata_names ]
+        names(unique_metadata_list) <- unique_metadata_names
+
+        file_name <- unique_metadata_list[ 'hits.file_name' ]
+        column_names <- c( column_names, gsub(".htseq.counts.gz$", "", file_name) )
+
+        input_matrix <- as.matrix(unique_metadata_list)
+        
+        if( first_UUID==TRUE){
+            output_matrix <- input_matrix
+            first_UUID <- FALSE
+        }else{
+            if ( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE ){
+                write("rownames identical", file=log_filename, append=TRUE)
+                write(paste0("Merging (with cbind) :: ", UUID), file=log_filename, append=TRUE)
+                output_matrix <- cbind(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }else{
+                write("rownames NOT identical", file=log_filename, append=TRUE)
+                write(paste0("Merging (with combine_matrices_by_column/merge) :: ", UUID), file=log_filename, append=TRUE)
+                output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }
+        }
+
+    }
+    
+    # label the columns
+    colnames(output_matrix) <- column_names
+    
+    # order rows
+    ordered_colnames <- order(colnames(output_matrix))
+    output_matrix <- output_matrix[,ordered_colnames]
+        
+    # order columns
+    ordered_rownames <- order(rownames(output_matrix))
+    output_matrix <- output_matrix[ordered_rownames,]
+
+    if( debug==TRUE ){ TEST.output_matrix <<- output_matrix}
+
+    # remove selected rows
+    for ( i in rows_to_remove ) {
+        output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+    }
+    
+    # rotate metadata file -- so it's format required for other package tools
+    if( rot_90==TRUE ){
+        output_matrix <- rot90(rot90(rot90(output_matrix)))
+    }
+
+    # export the metadata data
+    export_data(output_matrix,output_filename)
+    write(paste0("Wrote files imported from ", UUID_list_filename, " and wrote them to ", output_filename), file=log_filename, append=TRUE)
+
+    elapsed_time <- tictoc::toc()
+    elapsed_time <- elapsed_time$toc - elapsed_time$tic
+    write(paste("Metadata download time: ", elapsed_time), file=log_filename, append=TRUE)
+
+    write("DONE", file=log_filename, append=TRUE)
+                                   
+}
 
 
 
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+        
+        my_call <- paste0(
+            "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+            UUID,
+            "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=cases.case_id&expand=cases.samples,cases.diagnoses,cases.exposures,cases.diagnoses.treatments,cases.summary.data_categories",
+            expand_list
+        ) 
+
+        # get the filename and use it to get the columnname
+  
+
+
+         if( debug==TRUE ){ print(paste("Merging (with merge) ", i)) }
+                input_matrix <- import_metadata( i )
+                column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+                if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE  ){
+                    if( debug==TRUE ){
+                        print("rownames identical")
+                        my_dim <- dim(output_matrix)
+                        print(my_dim)
+                    }
+                    output_matrix <- cbind(output_matrix, input_matrix)
+
+        
+    # download the individual records and merge them as they are downloaded
+    ## elapsed_time <- tictoc::tic()
+    ## for(UUID in UUID_list) { # check this part - file returned has its own UUID - agrees for data and metadata, but is not same as UUID in list here (UUID.list)
+    ##     if( file.exists("curl_log.txt")==TRUE ){ unlink("curl_log.txt") } 
+    ##     system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+    ##                  UUID,
+    ##                  "'",
+    ##                  " > curl_log.txt",
+    ##                  sep=""))
+    ##     filename_temp <- scan(file="curl_log.txt", what="character")
+    ##     UUID_filename <- filename_temp[5]
+    ##     write(paste0("Done downloading file with UUID :: ", UUID, " and FILENAME :: ", UUID_filename), file=log_filename, append=TRUE)
+    ## }
+
+
+        
+        system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+                     UUID,
+                     "'",
+                     " > curl_log.txt",
+                     sep=""))
+        filename_temp <- scan(file="curl_log.txt", what="character")
+        UUID_filename <- filename_temp[5]
+        write(paste0("Done downloading file with UUID :: ", UUID, " and FILENAME :: ", UUID_filename), file=log_filename, append=TRUE)
+    }
+
+
+        
+    
+
+    my_call <- paste0(
+        "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+        UUID,
+        "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=cases.case_id&expand=cases.samples,cases.diagnoses,cases.exposures,cases.diagnoses.treatments,cases.summary.data_categories",
+        expand_list
+    ) 
+
+    my_call <- gsub(" ", "", paste(before_id, my_id, after_id, dict))
+    my_call.json <- fromJSON(getURL(my_call))
+
+
+        
+ aendpoints <- get_mapping_options() 
+		# this line is under the library commands inorder to perform it once
+        for (endpoint in endpoints){
+			temp <- vector()
+			for(j in c(1:50)){
+				temp <- metadata_cases(my_id=my_ids[i], dict=endpoint)
+				if(is.atomic(temp))
+					Sys.sleep(10)
+				else
+					break
+			}
+            raw_metadata_vector <- c(raw_metadata_vector,
+								 	flatten_list(temp$data))
+        }
+
+		###########END CHANGED
+
+        if(debug==TRUE){print("Made it here (2)")}
+        
+        for (j in 1:length(unique(names(raw_metadata_vector)))){
+            my_name <- unique(names(raw_metadata_vector))[j]
+            #print(my_name)
+            unique_name_value_pairs <- unique(  raw_metadata_vector[  which( names(raw_metadata_vector) == my_name )  ]  )
+            name_list <- vector()
+            #names(unique_name_value_pairs) <- rep(my_name, length(unique_name_value_pairs))
+            for (k in 1:length(unique_name_value_pairs)){
+                name_list <- c(name_list, (paste( my_name, ".", k ,sep="")))
+            }
+            names(unique_name_value_pairs) <- name_list
+            unique_metadata_vector <- c(unique_metadata_vector, unique_name_value_pairs)
+        }
+
+
+
+
+    
+if( i==1 ){ # on first sample, create the data matrix
+            metadata_matrix <- matrix(unique_metadata_vector, ncol=1)
+            rownames(metadata_matrix) <- names(unique_metadata_vector)
+            colnames(metadata_matrix) <- convert_fileUUID_to_name(my_ids[i])
+            if(debug==TRUE){print("Made it here (3.1)")}
+        }else{ # for all additional samples add on to the existing matrix
+            if(debug==TRUE){print("Made it here (3.2)")}
+            sample_metadata_matrix <- matrix(unique_metadata_vector, ncol=1)
+            if(debug==TRUE){print("Made it here (3.3)")}
+            rownames(sample_metadata_matrix) <- names(unique_metadata_vector)
+            if(debug==TRUE){print("Made it here (3.4)")}
+            colnames(sample_metadata_matrix) <- convert_fileUUID_to_name(my_ids[i])
+            if(debug==TRUE){
+                print("Made it here (3.5)")
+                matrix1 <<- metadata_matrix
+                matrix2 <<- sample_metadata_matrix
+            }
+            if(debug==TRUE){print("Made it here (3.6)")}
+            # place merge code here
+			
+
+            # Note - merging changes class of metadata_matrix from "matrix" to "data frame"; it's converted back below
+            metadata_matrix <- combine_matrices_by_column(matrix1=metadata_matrix, matrix2=sample_metadata_matrix, func_order_rows=order_rows, func_order_columns=order_columns, func_debug=debug)
+            if(debug==TRUE){
+                print("Made it here (3.7)")
+                print(paste("DATA_CLASS:", class(metadata_matrix)))
+            }
+
+
+
+
+            # example call to get file metadata
+            test_id <- "00f5e705-ae00-440e-8e18-9c15726d48c6"
+            expand_list <- get_expand()
+            paste0(
+                "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+                test_id,
+                "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=defaults&cases.case_id&expand=",
+                expand_list
+            )
+
+            test_id <- "00f5e705-ae00-440e-8e18-9c15726d48c6"
+            mapping <- get_mapping()
+            mapping$default_fields_list
+            paste0(
+                "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+                test_id,
+                "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&defaults&expand=",
+                mapping$expand_list,
+                "&fields=",
+                mapping$fields_list
+            )
+
+
+            
+
+
+            paste0(
+                "https://gdc-api.nci.nih.gov/files?filters=%7b%0d%0a+++%22op%22+%3a+%22%3d%22+%2c%0d%0a+++%22content%22+%3a+%7b%0d%0a+++++++%22field%22+%3a+%22file_id%22+%2c%0d%0a+++++++%22value%22+%3a+%5b+%22",
+                test_id,
+                "%22+%5d%0d%0a+++%7d%0d%0a%7d&pretty=true&fields=defaults&expand&fields",
+                expand_list
+            )
+
+            
+
+
+    index_files,
+    downstream_analyses,
+    downstream_analyses.output_files,
+    archive,
+    metadata_files,
+    annotations,
+    cases,
+    cases.demographic,
+    cases.samples,
+    cases.samples.annotations,
+    cases.samples.portions,
+    cases.samples.portions.center,
+    cases.samples.portions.analytes,
+    cases.samples.portions.analytes.aliquots,
+    cases.samples.portions.analytes.aliquots.center,
+    cases.samples.portions.analytes.aliquots.annotations",
+    cases.samples.portions.analytes.annotations",
+    cases.samples.portions.slides",
+    cases.samples.portions.slides.annotations",
+    cases.samples.portions.annotations",
+    cases.annotations",
+    cases.exposures",
+    cases.files",
+    cases.family_histories",
+    cases.diagnoses",
+    cases.diagnoses.treatments",
+    cases.summary",
+    cases.summary.data_categories",
+    cases.summary.experimental_strategies",
+    cases.project",
+    cases.project.program",
+    cases.tissue_source_site",
+    center",
+    analysis",
+    analysis.metadata",
+    analysis.metadata.read_groups",
+    analysis.metadata.read_groups.read_group_qcs",
+    analysis.input_files",
+    associated_entities"
+            
+
+
+
+
+    
+
+    
+
+
+
+
+
+    
+
+
+
+
+
+}
 
 
 
