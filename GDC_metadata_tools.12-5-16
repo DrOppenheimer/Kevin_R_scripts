@@ -273,11 +273,11 @@ download_and_merge_data_from_UUID <- function(
     # add the column names
     colnames(output_matrix) <- column_names
     
-    # order rows
+    # order columns
     ordered_colnames <- order(colnames(output_matrix))
     output_matrix <- output_matrix[,ordered_colnames]
         
-    # order columns
+    # order rows
     ordered_rownames <- order(rownames(output_matrix))
     output_matrix <- output_matrix[ordered_rownames,]
     
@@ -482,11 +482,11 @@ download_and_merge_metadata_from_UUID <- function(
     # label the columns
     colnames(output_matrix) <- column_names
     
-    # order rows
+    # order columns
     ordered_colnames <- order(colnames(output_matrix))
     output_matrix <- output_matrix[,ordered_colnames]
         
-    # order columns
+    # order rows
     ordered_rownames <- order(rownames(output_matrix))
     output_matrix <- output_matrix[ordered_rownames,]
 
@@ -517,7 +517,7 @@ download_and_merge_metadata_from_UUID <- function(
       
 
 
-get_UUIDS_for_paired_samples <- function(metadata_table, output_UUID_list="default", table_is_file=TRUE){
+get_UUIDS_and_metadata_for_repeat_cases <- function(metadata_table, output_UUID_list="default", output_metadata="default", table_is_file=TRUE){
 
     ### SUBS ###
 
@@ -525,7 +525,7 @@ get_UUIDS_for_paired_samples <- function(metadata_table, output_UUID_list="defau
     import_metadata <- function(group_table){ #, group_column, sample_names){
         metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
             read.table(
-                file=group_table,row.names=1,header=FALSE,sep="\t",
+                file=group_table,row.names=1,header=TRUE,sep="\t",
                 colClasses = "character", check.names=FALSE,
                 comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
             )
@@ -537,13 +537,25 @@ get_UUIDS_for_paired_samples <- function(metadata_table, output_UUID_list="defau
         write.table(data_object, file=file_name, sep="\t", col.names = FALSE, row.names = FALSE, quote = FALSE, eol="\n")
     }
 
+    export_data <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+    }
+    
     ### MAIN ###
 
-    # create default filename for output
+    # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    
+    # create default filename for output UUIDs
     if( identical(output_UUID_list, "default") ){
-        output_UUID_list <- paste0(output_UUID_list, ".UUIDs_of_paired_samples.txt")
+        output_UUID_list <- paste0(metadata_table, ".", my_timestamp, ".UUIDs_of_repeat_cases.txt")
     }
 
+    # create default filename for outout metadata
+    if( identical(output_metadata, "default") ){
+        output_metadata <- paste0(metadata_table, ".", my_timestamp, ".METADATA_of_repeat_cases.txt")
+    }
+    
     # import metadata (as file or from matrix object)
     if( table_is_file ==TRUE ){
         my_metadata <- import_metadata(metadata_table)
@@ -552,11 +564,42 @@ get_UUIDS_for_paired_samples <- function(metadata_table, output_UUID_list="defau
     }
     
     # get list of caseids that appear more than once (assume these to be pairs or groups of samples from the same patient)
-    duplicated_cases_bool <- dupliated(my_metadata[ ,'hits.cases.case_id' ])
-    duplicated_cases_UUIDs <- my_metadata[ duplicated_cases_bool, 'hits.file_id' ]
+    duplicated_cases_bool <- duplicated(my_metadata[ ,'hits.cases.case_id' ])
+    duplicated_case_ids <- unique(my_metadata[ duplicated_cases_bool==TRUE, 'hits.cases.case_id' ])
 
-    # export the list of UUIDs for repeat cases
-    export_UUIDs( duplicated_cases_UUIDs,output_UUID_list )
+    row_names <- vector(mode="character")
+    subset_metadata_matrix <- matrix()
+    first_case=TRUE
+    for( i in 1:nrow(my_metadata) ){
+        if( my_metadata[i,'hits.cases.case_id'] %in% duplicated_case_ids ){
+            if ( first_case==TRUE ){
+                subset_metadata_matrix <- my_metadata[i,]
+                if(debug==TRUE){TEST.first_subset <<- subset_metadata_matrix}
+                row_names <- rownames(my_metadata)[i]
+                first_case=FALSE
+            }else{
+                subset_metadata_matrix <- rbind( subset_metadata_matrix, my_metadata[i,] )
+                if(debug==TRUE){TEST.subset_metadata_matrix <<- subset_metadata_matrix}
+                row_names <- c( row_names, rownames(my_metadata)[i])
+            }
+        }
+    }
+    rownames( subset_metadata_matrix ) <- row_names
+
+    ## # order columns
+    ## ordered_colnames <- order(colnames(subset_metadata_matrix))
+    ## subset_metadata_matrix <- subset_metadata_matrix[,ordered_colnames]
+        
+    # order rows
+    ordered_rows <- order(subset_metadata_matrix[,'hits.cases.case_id'])
+    subset_metadata_matrix <- subset_metadata_matrix[ordered_rows,]
+
+    # export metadata matrix and UUID list as separate files (for use with other tools)
+    export_data(subset_metadata_matrix,output_metadata)
+    
+    duplicated_cases_UUIDs <- as.list( subset_metadata_matrix[,'hits.file_id'] )
+    duplicated_cases_UUIDs <- unlist(unname(duplicated_cases_UUIDs))
+    export_UUIDs(duplicated_cases_UUIDs,output_UUID_list)
 
 }
 
