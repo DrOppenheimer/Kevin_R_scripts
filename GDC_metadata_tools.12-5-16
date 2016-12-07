@@ -180,7 +180,7 @@ download_and_merge_data_from_UUID <- function(
     
     # create the log file
     if( identical(log, "default")==TRUE ){
-        log_filename <- paste0("download_and_merge_data_from_UUID_log.", my_timestamp, ".txt", sep="")
+        log_filename <- paste0("download_and_merge_DATA_from_UUID_log.", my_timestamp, ".txt", sep="")
     }else{
         log_filename <- log
     }
@@ -462,6 +462,22 @@ download_and_merge_metadata_from_UUID <- function(
         }
 
     }
+
+    # add the UUIDS to the matrix
+    ## new_rownames <- c("UUID", rownames(output_matrix))
+
+    if(debug==TRUE){
+         TEST.input_matrix <<- input_matrix
+         TEST.output_matrix <<- output_matrix
+    }
+
+    ## stop()
+
+    ## # add the UUIDs to the output_matrix
+    ## ### already there : hits.file_id
+    ## output_matrix <- rbind(UUID_list, output_matrix)
+    ## rownames(output_matrix)[1] <- "UUID"
+    ## if(debug==TRUE){TEST.output_matrix <<- output_matrix}
     
     # label the columns
     colnames(output_matrix) <- column_names
@@ -473,8 +489,6 @@ download_and_merge_metadata_from_UUID <- function(
     # order columns
     ordered_rownames <- order(rownames(output_matrix))
     output_matrix <- output_matrix[ordered_rownames,]
-
-    if( debug==TRUE ){ TEST.output_matrix <<- output_matrix}
 
     # remove selected rows
     for ( i in rows_to_remove ) {
@@ -503,7 +517,48 @@ download_and_merge_metadata_from_UUID <- function(
       
 
 
+get_UUIDS_for_paired_samples <- function(metadata_table, output_UUID_list="default", table_is_file=TRUE){
 
+    ### SUBS ###
+
+    # function to import data or metadata -- does not alter non-numerical data 
+    import_metadata <- function(group_table){ #, group_column, sample_names){
+        metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+            read.table(
+                file=group_table,row.names=1,header=FALSE,sep="\t",
+                colClasses = "character", check.names=FALSE,
+                comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+            )
+        )
+    }
+    
+    # function to export UUIDs
+    export_UUIDs <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = FALSE, row.names = FALSE, quote = FALSE, eol="\n")
+    }
+
+    ### MAIN ###
+
+    # create default filename for output
+    if( identical(output_UUID_list, "default") ){
+        output_UUID_list <- paste0(output_UUID_list, ".UUIDs_of_paired_samples.txt")
+    }
+
+    # import metadata (as file or from matrix object)
+    if( table_is_file ==TRUE ){
+        my_metadata <- import_metadata(metadata_table)
+    }else{
+        my_metadata <- metadata_table
+    }
+    
+    # get list of caseids that appear more than once (assume these to be pairs or groups of samples from the same patient)
+    duplicated_cases_bool <- dupliated(my_metadata[ ,'hits.cases.case_id' ])
+    duplicated_cases_UUIDs <- my_metadata[ duplicated_cases_bool, 'hits.file_id' ]
+
+    # export the list of UUIDs for repeat cases
+    export_UUIDs( duplicated_cases_UUIDs,output_UUID_list )
+
+}
 
 
 
