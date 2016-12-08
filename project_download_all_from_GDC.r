@@ -217,12 +217,12 @@ combine_matrices_by_column <- function(matrix1, matrix2, export=NA, use_fudge=FA
         pseudo_count <- min(comb_matrix, na.rm=TRUE)/pseudo_fudge # find the min real value; that num/pseudo_fudge = pseudo_count value
         comb_matrix[is.na(comb_matrix)] <- pseudo_count # replace NA with pseudo_count
     }
-    # order columns
+    # order rows
     if( order_rows==TRUE){
         ordered_rownames <- order(rownames(comb_matrix))
         comb_matrix <- comb_matrix[ordered_rownames,]
     }
-    # order rows
+    # order columns
     if( order_columns==TRUE){
         ordered_colnames <- order(colnames(comb_matrix))
         comb_matrix <- comb_matrix[,ordered_colnames]

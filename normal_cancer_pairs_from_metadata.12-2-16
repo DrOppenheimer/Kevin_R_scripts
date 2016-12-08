@@ -1,0 +1,107 @@
+normal_cancer_pairs_from_metadata <- function(metadata_file, debug=FALSE){
+
+    ### SUBS
+    
+    # function to import data and metadata --- better than old import_data as it can hand numerical and nominal data
+    import_metadata <- function(group_table){ #, group_column, sample_names){
+        metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+            read.table(
+                file=group_table,row.names=1,header=TRUE,sep="\t",
+                colClasses = "character", check.names=FALSE,
+                comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+            )
+        )
+    }
+    
+    # function to export data
+    export_data <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+    }
+
+    
+    ### MAIN
+
+    # load the metadata file
+    metadata_table <- import_metadata(metadata_file)
+    if( debug==TRUE ){ TEST.metadata_table <<- metadata_table }
+
+    # find the case ids that are present in more than one sample
+    duplicated_case_ids_bool <- duplicated( metadata_table['hits.case_id.1',] )
+    duplicated_case_ids <- metadata_table['hits.case_id.1',duplicated_case_ids_bool]
+    duplicated_case_ids <- unique(duplicated_case_ids)
+    if( debug==TRUE ){ TEST.duplicated_case_ids <<- duplicated_case_ids }
+
+    # make a list of the case ids that have abundance >= 2 # assume that it is a pair (optimize this later)
+
+    output_matrix <- matrix()
+    column_names <- vector( mode="character" )
+    first_hit <- 0
+    #rownames(output_matrix) <- rownames(metadata_table)
+
+    if( debug==TRUE ){ print("Made it here (1)") }
+    
+    for( i in 1:ncol(metadata_table) ){
+        if( debug==TRUE ){ print("Made it here (2.a)") }
+        if( debug==TRUE ){ print(i) }
+        if( metadata_table['hits.case_id.1',i] %in% duplicated_case_ids ){
+            if( debug==TRUE ){ print("Made it here (2.b)") }
+            if( debug==TRUE ){ print(paste(metadata_table['hits.case_id.1',i])) }
+            if ( first_hit==0){
+                output_matrix <- as.matrix( metadata_table[,i], ncol=1, drop=FALSE )
+                column_names <- colnames(metadata_table)[i]
+                first_hit =+ 1
+            }else{
+                output_matrix <- cbind( output_matrix, metadata_table[,i] )
+                column_names <- c( column_names, colnames(metadata_table)[i])
+            }
+        }
+    }
+    colnames( output_matrix ) <- column_names
+
+    if( debug==TRUE ){
+        print("Made it here (3)")
+        TEST.output_matrix <<- output_matrix
+    }
+    
+    # order columns by case id
+    output_matrix <- output_matrix[ , order( output_matrix[ 'hits.case_id.1', ] ) ]
+
+    if( debug==TRUE ){ print("Made it here (4)") }
+
+    # create an additional metdata that has a clearer differenciation between cancer and normal
+    simple_descriptors <- vector(mode="character")
+    column_count <- 0
+    for( i in 1:ncol(output_matrix) ){
+        simple_descriptor <- "Cancer"
+        if( column_count == 0 ){
+            if( grepl("ormal", output_matrix['hits.samples.sample_type.1',i])==TRUE){ simple_descriptor <- "Normal" }
+            #if( grepl("ormal", output_matrix['hits.samples.sample_type.2',i])==TRUE){ simple_descriptor <- "Normal" }
+            #if( grepl("ormal", output_matrix['hits.samples.sample_type.3',i])==TRUE){ simple_descriptor <- "Normal" }
+            simple_descriptors <- simple_descriptor
+            column_count =+ 1
+        }else{
+            if( grepl("ormal", output_matrix['hits.samples.sample_type.1',i])==TRUE){ simple_descriptor <- "Normal" }
+            #if( grepl("ormal", output_matrix['hits.samples.sample_type.2',i])==TRUE){ simple_descriptor <- "Normal" }
+            #if( grepl("ormal", output_matrix['hits.samples.sample_type.3',i])==TRUE){ simple_descriptor <- "Normal" }
+            simple_descriptors <- c(simple_descriptors,simple_descriptor) 
+        }
+    }
+    output_matrix <- rbind(output_matrix, simple_descriptors)
+    rownames(output_matrix)[nrow(output_matrix)] <- "C_vs_N"
+    
+    # export results
+    output_filename <- paste(gsub(".txt", "", metadata_file), ".C_N_pairs.txt", sep="", collapse="")
+    export_data(output_matrix, output_filename)
+    
+}
+
+
+
+
+
+
+
+## hits.case_id.1
+## hits.samples.sample_type.1
+## hits.samples.sample_type.2
+## hits.samples.sample_type.3

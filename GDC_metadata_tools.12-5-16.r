@@ -96,7 +96,7 @@ get_project_UUIDs <- function(
     }
 
     # make sure packages in list are installed and sourced
-    download    for (i in package_list){
+    for (i in package_list){
         if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
         library(i,character.only = TRUE)
     }
