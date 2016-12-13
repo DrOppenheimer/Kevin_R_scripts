@@ -18,6 +18,19 @@
     )
 
 
+# load scripts
+source("~/git/Kevin_R_scripts/GDC_metadata_tools.12-5-16.r")
+
+source("~/git/Kevin_R_scripts/calculate_pco.r")
+source("~/git/Kevin_R_scripts/preprocessing_tool.r")
+source("~/git/Kevin_R_scripts/calc_stats.r")
+source("~/git/Kevin_R_scripts/render_calculated_pcoa.r")
+source("~/git/Kevin_R_scripts/")
+
+
+
+
+
 combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
 
     # perform the merge
@@ -640,6 +653,130 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
     export_UUIDs(duplicated_cases_UUIDs,output_UUID_list)
 
 }
+
+
+
+
+
+
+multi_analysis_wrapper <- function(
+    project_list="test_list.txt",
+    UUID_list_is_file=TRUE, 
+    create_directory_per_project=TRUE   
+)
+{
+
+    # import the list of projects
+    if( UUID_list_is_file ){
+        projects <- scan(file=project_list, what="character")
+    }
+
+    # main loop - iterate through each of the projects
+    for( project in projects){
+
+        # create a directory for each project if that option is selected
+        if( create_directory_per_project==TRUE ){
+            main_dir <- getwd()
+            dir.create(file.path(main_dir, project), showWarnings = FALSE)
+            setwd(file.path(main_dir, project))
+        }
+
+        # get the list of UUIDs for a filetype (RNASeq counts) for the project
+        get_project_UUIDs(
+            projects=project,
+            output_filename_prefix=project
+        )
+        UUID_list_filename <- paste0(project, ".UUID_list.txt")
+
+        ### Loop to continue only if the UUID list has entries
+        my_UUID_list <- scan(UUID_list_filename, what="character")
+        if( length(my_UUID_list != 0) ){
+        
+        
+        ### use the UUIDs to get the abundance data
+            download_and_merge_data_from_UUID(
+                UUID_list=UUID_list_filename,
+                output_filename_prefix=project
+            )
+            data_filename <- paste0(project, ".DATA.txt")
+
+        ### use the UUIDs to get the corresponding metadata
+            download_and_merge_metadata_from_UUID(
+                UUID_list=UUID_list_filename,
+                output_filename_prefix=project
+            )
+            metadata_filename <- paste0(project, ".METAdata.txt")
+
+        ### create a subselected metadata file and list of UUIDs that correspond to the cases with more than one file (e.g. cancer(s) vs normal(s))
+            get_UUIDS_and_metadata_for_repeat_cases(
+                metadata_table=metadata_filename,
+                output_metadata_prefix=project,
+                output_UUID_prefix=project,
+                
+            )
+            subselected_UUID_list_filename <- paste0(project, ".SUBSELECTED.UUID_list.txt")
+            subselected_metadata_filename <- paste0(project, ".SUBSELECTED.METAdata.txt")
+            
+        ### download data for the subselected metadata and UUID list
+            download_and_merge_data_from_UUID(
+                UUID_list=subselected_UUID_list_filename,
+                output_filename_prefix= paste0(project, ".SUBSELECTED")
+            )
+            subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt")
+
+        ### standard preprocessing to remove low abudance count data and normalized with DESeq
+            preprocessing_tool(data_in=subselected_data_filename)
+            preprocessed_subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt")
+        
+        ### stats (KW - as most have more than two groups, one normal and 1-3 cancer)
+            calc_stats(
+                data_table=preprocessed_subselected_data_filename,
+                metadata_table=subselected_metadata_filename,
+                metadata_column="hits.cases.samples.sample_type"
+            )
+            stat_results_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.Kruskal-Wallis.hits.cases.samples.sample_type.STATS_RESULTS.txt")
+        
+        ### Calculate raw PCoA
+            calculate_pco(file_in=preprocessed_subselected_data_filename)
+            raw_PCoA_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.euclidean.PCoA")
+        # static viz of PCoA
+            render_calcualted_pcoa(
+                PCoA_in=raw_PCoA_filename,
+                metadata_table=subselected_metadata_filename,
+                use_all_metadata_columns=TRUE
+            )
+
+        }else{
+
+            ### message if there are no UUIDs for teh project and filetype specified
+            unlink(UUID_list_filename)
+            output_filename <- paste0(project, "._HAS_NO_UUIDs_OF REQUESTED_TYPE.txt")
+            write("There are no UUIDs for the requested project and filetype", file=output_filename)
+            
+        }
+
+            
+        ### go back to the main directory if the work was completed in a created, project named directory
+        if( create_directory_per_project==TRUE ){
+            setwd( main_dir ) 
+        }
+
+        
+    
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
