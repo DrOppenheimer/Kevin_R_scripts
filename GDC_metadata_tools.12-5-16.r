@@ -19,7 +19,7 @@
 
 
 # load scripts
-source("~/git/Kevin_R_scripts/GDC_metadata_tools.12-5-16.r")
+#source("~/git/Kevin_R_scripts/GDC_metadata_tools.12-5-16.r")
 
 source("~/git/Kevin_R_scripts/calculate_pco.r")
 source("~/git/Kevin_R_scripts/preprocessing_tool.r")
