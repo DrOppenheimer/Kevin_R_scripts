@@ -72,7 +72,10 @@ get_project_UUIDs <- function(
     debug=FALSE,
     log="default",
     write_to_file = TRUE,
-    output_filename = "default"
+    output_filename_prefix= "my_uuid_list",
+    output_include_timestamp=FALSE,
+    output_filename_extension="UUID_list.txt",
+    output_log_extension="log"
 )
 {
 
@@ -89,10 +92,10 @@ get_project_UUIDs <- function(
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
     # create the log file
-    if( identical(log, "default")==TRUE ){
-        log_filename <- paste0("get_UUID_log.", my_timestamp, ".txt")
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
     }else{
-        log_filename <- log
+        log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
 
     # make sure packages in list are installed and sourced
@@ -122,10 +125,11 @@ get_project_UUIDs <- function(
     # write the list of UUIDs to a file or return as vector
     if( write_to_file ==TRUE){
 
-        if( identical(output_filename, "default") ){
-            output_filename <- paste0("UUID_list.", my_timestamp, ".txt")
+        # create output filename
+        if( output_include_timestamp==TRUE ){
+            output_filename <- paste0( output_filename_prefix, ".", my_timestamp, ".", output_filename_extension)
         }else{
-            output_filename <- output_filename
+            output_filename <- paste0( output_filename_prefix, ".", output_filename_extension)
         }
 
         export_UUIDs(UUID_list, output_filename)
@@ -144,14 +148,19 @@ get_project_UUIDs <- function(
 
 download_and_merge_data_from_UUID <- function(
     UUID_list,
-    output_prefix = "my_merged_DATA",
+    #output_prefix = "my_merged_DATA",
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
     rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
     dl_file_pattern=".htseq.counts.gz$",
     cleanup=TRUE,
-    log="default",
-    debug=FALSE
+    #log="default",
+    debug=FALSE,
+    output_filename_prefix= "my_data",
+    output_include_timestamp=FALSE,
+    output_filename_extension="DATA.txt",
+    output_log_extension="log"
+    
     
 ){
 
@@ -179,10 +188,10 @@ download_and_merge_data_from_UUID <- function(
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
     # create the log file
-    if( identical(log, "default")==TRUE ){
-        log_filename <- paste0("download_and_merge_DATA_from_UUID_log.", my_timestamp, ".txt", sep="")
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
     }else{
-        log_filename <- log
+        log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
 
     # make sure packages in list are installed and sourced
@@ -200,8 +209,12 @@ download_and_merge_data_from_UUID <- function(
         UUID_list_filename <- "UUID_list"
     }
 
-    # create filename for the output
-    output_filename <- paste0(output_prefix, ".", my_timestamp, ".txt")
+    # create output filename
+    if( output_include_timestamp==TRUE ){
+        output_filename <- paste0( output_filename_prefix, ".", my_timestamp, ".", output_filename_extension)
+    }else{
+        output_filename <- paste0( output_filename_prefix, ".", output_filename_extension)
+    }
 
     # delete any pre-exisiting count files
     write(paste0("Deleting any previous files with pattern = ", dl_file_pattern), file=log_filename, append=FALSE)
@@ -319,15 +332,19 @@ download_and_merge_data_from_UUID <- function(
 
 download_and_merge_metadata_from_UUID <- function(
     UUID_list,
-    output_prefix = "my_merged_METAdata",
+    #output_prefix = "my_merged_METAdata",
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc", "matlab"),
     rows_to_remove=c("pagination.count", "pagination.from", "pagination.page", "pagination.pages", "pagination.size", "pagination.sort", "pagination.total"),
     #dl_file_pattern=".htseq.counts.gz$",
     #cleanup=TRUE,
-    log="default",
+    #log="default",
     rot_90=TRUE,
-    debug=FALSE
+    debug=FALSE,
+    output_filename_prefix= "my_metadata",
+    output_include_timestamp=FALSE,
+    output_filename_extension="METAdata.txt",
+    output_log_extension="log"
     
 ){
 
@@ -374,11 +391,11 @@ download_and_merge_metadata_from_UUID <- function(
     # create a timestamp
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
-    # create the log file
-    if( identical(log, "default")==TRUE ){
-        log_filename <- paste0("download_and_merge_METAdata_from_UUID_log.", my_timestamp, ".txt", sep="")
+   # create the log file
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
     }else{
-        log_filename <- log
+        log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
 
     # make sure packages in list are installed and sourced
@@ -396,8 +413,12 @@ download_and_merge_metadata_from_UUID <- function(
         UUID_list_filename <- "UUID_list"
     }
 
-    # create filename for the output
-    output_filename <- paste0(output_prefix, ".", my_timestamp, ".txt")
+    # create output filename
+    if( output_include_timestamp==TRUE ){
+        output_filename <- paste0( output_filename_prefix, ".", my_timestamp, ".", output_filename_extension)
+    }else{
+        output_filename <- paste0( output_filename_prefix, ".", output_filename_extension)
+    }
 
     # get the mapping
     mapping <- get_mapping()
@@ -516,7 +537,22 @@ download_and_merge_metadata_from_UUID <- function(
       
 
 
-get_UUIDS_and_metadata_for_repeat_cases <- function(metadata_table, output_UUID_list="default", output_metadata="default", table_is_file=TRUE){
+get_UUIDS_and_metadata_for_repeat_cases <- function(
+    metadata_table,
+    #output_UUID_list="default",
+    #output_metadata="default",
+    table_is_file=TRUE
+    output_metadata_prefix= "my_metadata",
+    output_metadata_extension="METAdata.txt",
+    output_UUID_prefix= "my_uuid_list",
+    output_UUID_extension= "UUID_list.txt",
+   # output_log_extension="log",
+    output_include_timestamp=FALSE,
+    
+
+
+    
+){
 
     ### SUBS ###
 
@@ -546,13 +582,19 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(metadata_table, output_UUID_
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
     # create default filename for output UUIDs
-    if( identical(output_UUID_list, "default") ){
-        output_UUID_list <- paste0(metadata_table, ".", my_timestamp, ".UUIDs_of_repeat_cases.txt")
+
+    # create output filename
+    if( output_include_timestamp==TRUE ){
+        output_UUID_list <- paste0( output_UUID_prefix, ".", my_timestamp, ".", output_UUID_extension)
+    }else{
+        output_UUID_list <- paste0( output_UUID_prefix, ".", output_UUID_extension)
     }
 
     # create default filename for outout metadata
-    if( identical(output_metadata, "default") ){
-        output_metadata <- paste0(metadata_table, ".", my_timestamp, ".METADATA_of_repeat_cases.txt")
+    if( output_include_timestamp==TRUE ){
+        output_metadata <- paste0( output_metadata_prefix, ".", my_timestamp, ".", output_metadata_extension)
+    }else{
+        output_metadata <- paste0( output_metadata_prefix, ".", output_metadata_extension)
     }
     
     # import metadata (as file or from matrix object)
