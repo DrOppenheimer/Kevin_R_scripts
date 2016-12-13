@@ -543,9 +543,9 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
     #output_metadata="default",
     table_is_file=TRUE,
     output_metadata_prefix= "my_metadata",
-    output_metadata_extension="METAdata.txt",
+    output_metadata_extension="SUBSELECTED.METAdata.txt",
     output_UUID_prefix= "my_uuid_list",
-    output_UUID_extension= "UUID_list.txt",
+    output_UUID_extension= "SUBSELECTED.UUID_list.txt",
    # output_log_extension="log",
     output_include_timestamp=FALSE,
     debug=FALSE
