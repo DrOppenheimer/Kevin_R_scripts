@@ -258,7 +258,7 @@ download_and_merge_data_from_UUID <- function(
         if ( file_count==0 ){
             write(paste0("Starting merge with :: ", i), file=log_filename, append=TRUE)
             input_matrix <- import_metadata( i )
-            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
             if( debug==TRUE ){
                 print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
             }
@@ -266,7 +266,7 @@ download_and_merge_data_from_UUID <- function(
             file_count =+ 1
         }else{
             input_matrix <- import_metadata( i )
-            column_names <- c( column_names, gsub(".htseq.counts.gz$", "", i) )
+            column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
             if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE ){
                 write("rownames identical", file=log_filename, append=TRUE)
                 write(paste0("Merging (with cbind) :: ", i), file=log_filename, append=TRUE)
@@ -310,7 +310,7 @@ download_and_merge_data_from_UUID <- function(
                                    
     # cleanup
     if( cleanup==TRUE ){
-        file_list <- dir(pattern=".htseq.counts.gz$")
+        file_list <- dir(pattern=dl_file_pattern)
         if ( length(file_list) > 0 ){
             for ( i in file_list){
                 unlink( i )
@@ -336,7 +336,7 @@ download_and_merge_metadata_from_UUID <- function(
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc", "matlab"),
     rows_to_remove=c("pagination.count", "pagination.from", "pagination.page", "pagination.pages", "pagination.size", "pagination.sort", "pagination.total"),
-    #dl_file_pattern=".htseq.counts.gz$",
+    dl_file_pattern=".htseq.counts.gz$",
     #cleanup=TRUE,
     #log="default",
     rot_90=TRUE,
@@ -458,7 +458,7 @@ download_and_merge_metadata_from_UUID <- function(
         names(unique_metadata_list) <- unique_metadata_names
 
         file_name <- unique_metadata_list[ 'hits.file_name' ]
-        column_names <- c( column_names, gsub(".htseq.counts.gz$", "", file_name) )
+        column_names <- c( column_names, gsub(dl_file_pattern, "", file_name) )
 
         input_matrix <- as.matrix(unique_metadata_list)
         
