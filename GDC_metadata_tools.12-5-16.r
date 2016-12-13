@@ -40,7 +40,7 @@ combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, 
     rownames(comb_matrix) <- comb_matrix$Row.names
     comb_matrix$Row.names <- NULL
 
-    #colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
+    colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
     
     # order columns
     if( func_order_rows==TRUE){
