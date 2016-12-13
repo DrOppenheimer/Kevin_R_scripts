@@ -89,7 +89,7 @@ get_project_UUIDs <- function(
     
     # create the log file
     if( output_include_timestamp==TRUE ){
-        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
     }else{
         log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
@@ -185,7 +185,7 @@ download_and_merge_data_from_UUID <- function(
     
     # create the log file
     if( output_include_timestamp==TRUE ){
-        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
     }else{
         log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
@@ -389,7 +389,7 @@ download_and_merge_metadata_from_UUID <- function(
     
    # create the log file
     if( output_include_timestamp==TRUE ){
-        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension, ".txt")
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
     }else{
         log_filename <- paste0(output_filename_prefix,".", output_log_extension)
     }
@@ -646,19 +646,34 @@ multi_analysis_wrapper <- function(
     project_list="test_list.txt",
     UUID_list_is_file=TRUE, 
     create_directory_per_project=TRUE,
-    debug=FALSE
+    debug=FALSE,
+    output_log_extension="log",
+    output_include_timestamp=FALSE
 )
 {
+    # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    
+   # create the log file
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
+    }else{
+        log_filename <- paste0(output_filename_prefix,".", output_log_extension)
+    }
 
+    write("Begin log:", file=log_filename, append=FALSE)
+    
     # import the list of projects
     if( UUID_list_is_file ){
         projects <- scan(file=project_list, what="character")
     }else{
         projects <- project_list
     }
+    write("Imported UUID list", file=log_filename, append=TRUE)
 
     # main loop - iterate through each of the projects
     for( project in projects){
+        write(paste0("Starting to process: ", project), file=log_filename, append=TRUE)
 
         # create a directory for each project if that option is selected
         main_dir <- getwd()
@@ -669,6 +684,7 @@ multi_analysis_wrapper <- function(
             }
             dir.create(file.path(main_dir, project), showWarnings = FALSE)
             setwd(file.path(main_dir, project))
+            write(paste0("Created Directory: ", project, " in ", main_dir), file=log_filename, append=TRUE)
         }
 
         # get the list of UUIDs for a filetype (RNASeq counts) for the project
@@ -677,11 +693,12 @@ multi_analysis_wrapper <- function(
             output_filename_prefix=project
         )
         UUID_list_filename <- paste0(project, ".UUID_list.txt")
-
+        write(paste0("Got project UUIDs"), file=log_filename, append=TRUE)
+        
         ### Loop to continue only if the UUID list has entries
         my_UUID_list <- scan(UUID_list_filename, what="character")
         if( length(my_UUID_list != 0) ){
-        
+            write(paste0("UUID list is longer than 0, proceeding"), file=log_filename, append=TRUE)
         
         ### use the UUIDs to get the abundance data
             download_and_merge_data_from_UUID(
@@ -689,6 +706,7 @@ multi_analysis_wrapper <- function(
                 output_filename_prefix=project
             )
             data_filename <- paste0(project, ".DATA.txt")
+            write(paste0("Downloaded DATA"), file=log_filename, append=TRUE)
 
         ### use the UUIDs to get the corresponding metadata
             download_and_merge_metadata_from_UUID(
@@ -696,6 +714,7 @@ multi_analysis_wrapper <- function(
                 output_filename_prefix=project
             )
             metadata_filename <- paste0(project, ".METAdata.txt")
+            write(paste0("Downloaded METAdata"), file=log_filename, append=TRUE)
 
         ### create a subselected metadata file and list of UUIDs that correspond to the cases with more than one file (e.g. cancer(s) vs normal(s))
             get_UUIDS_and_metadata_for_repeat_cases(
@@ -706,6 +725,7 @@ multi_analysis_wrapper <- function(
             )
             subselected_UUID_list_filename <- paste0(project, ".SUBSELECTED.UUID_list.txt")
             subselected_metadata_filename <- paste0(project, ".SUBSELECTED.METAdata.txt")
+            write(paste0("Got susbselected UUID list and METAdata"), file=log_filename, append=TRUE)
             
         ### download data for the subselected metadata and UUID list
             download_and_merge_data_from_UUID(
@@ -713,11 +733,13 @@ multi_analysis_wrapper <- function(
                 output_filename_prefix= paste0(project, ".SUBSELECTED")
             )
             subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt")
+            write(paste0("Got subselected DATA"), file=log_filename, append=TRUE)
 
         ### standard preprocessing to remove low abudance count data and normalized with DESeq
             preprocessing_tool(data_in=subselected_data_filename)
             preprocessed_subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt")
-        
+            write(paste0("Performed preprocessing"), file=log_filename, append=TRUE)
+            
         ### stats (KW - as most have more than two groups, one normal and 1-3 cancer)
             calc_stats(
                 data_table=preprocessed_subselected_data_filename,
@@ -725,16 +747,19 @@ multi_analysis_wrapper <- function(
                 metadata_column="hits.cases.samples.sample_type"
             )
             stat_results_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.Kruskal-Wallis.hits.cases.samples.sample_type.STATS_RESULTS.txt")
-        
+            write(paste0("Performed stats"), file=log_filename, append=TRUE)
+            
         ### Calculate raw PCoA
             calculate_pco(file_in=preprocessed_subselected_data_filename)
             raw_PCoA_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.euclidean.PCoA")
+            write(paste0("Calculated raw PCoA"), file=log_filename, append=TRUE)
         ## # static viz of PCoA
         ##     render_calcualted_pcoa(
         ##         PCoA_in=raw_PCoA_filename,
         ##         metadata_table=subselected_metadata_filename,
         ##         use_all_metadata_columns=TRUE
         ##     )
+        ## write(paste0("Created static vizualizations of PCoA"), file=log_filename, append=TRUE)    
 
         }else{
 
@@ -742,7 +767,7 @@ multi_analysis_wrapper <- function(
             unlink(UUID_list_filename)
             output_filename <- paste0(project, "._HAS_NO_UUIDs_OF REQUESTED_TYPE.txt")
             write("There are no UUIDs for the requested project and filetype", file=output_filename)
-            
+            write(paste0("There are no UUIDs for the requested project and filetype, skipping to the next project"), file=log_filename, append=TRUE)
         }
 
             
@@ -750,10 +775,12 @@ multi_analysis_wrapper <- function(
         if( create_directory_per_project==TRUE ){
             setwd( main_dir ) 
         }
-
         
+        write(paste0("Completed processing of : ", project), file=log_filename, append=TRUE)
     
     }
+
+    write(paste0("Processed all projects; Log END"), file=log_filename, append=TRUE)
 
 }
 
