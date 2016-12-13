@@ -729,12 +729,12 @@ multi_analysis_wrapper <- function(
         ### Calculate raw PCoA
             calculate_pco(file_in=preprocessed_subselected_data_filename)
             raw_PCoA_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.euclidean.PCoA")
-        # static viz of PCoA
-            render_calcualted_pcoa(
-                PCoA_in=raw_PCoA_filename,
-                metadata_table=subselected_metadata_filename,
-                use_all_metadata_columns=TRUE
-            )
+        ## # static viz of PCoA
+        ##     render_calcualted_pcoa(
+        ##         PCoA_in=raw_PCoA_filename,
+        ##         metadata_table=subselected_metadata_filename,
+        ##         use_all_metadata_columns=TRUE
+        ##     )
 
         }else{
 
