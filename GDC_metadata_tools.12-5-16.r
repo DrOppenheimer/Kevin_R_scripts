@@ -547,7 +547,8 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
     output_UUID_prefix= "my_uuid_list",
     output_UUID_extension= "UUID_list.txt",
    # output_log_extension="log",
-    output_include_timestamp=FALSE
+    output_include_timestamp=FALSE,
+    debug=FALSE
 ){
 
     ### SUBS ###
