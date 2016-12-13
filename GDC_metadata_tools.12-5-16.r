@@ -645,7 +645,8 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
 multi_analysis_wrapper <- function(
     project_list="test_list.txt",
     UUID_list_is_file=TRUE, 
-    create_directory_per_project=TRUE   
+    create_directory_per_project=TRUE,
+    debug=FALSE
 )
 {
 
@@ -660,8 +661,12 @@ multi_analysis_wrapper <- function(
     for( project in projects){
 
         # create a directory for each project if that option is selected
+        main_dir <- getwd()
         if( create_directory_per_project==TRUE ){
-            main_dir <- getwd()
+            if( debug==TRUE ){
+                print(paste0("main_dir :: ", main_dir))
+                print(paste0("project :: ", project))
+            }
             dir.create(file.path(main_dir, project), showWarnings = FALSE)
             setwd(file.path(main_dir, project))
         }
