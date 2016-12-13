@@ -34,43 +34,26 @@ source("~/git/Kevin_R_scripts/")
 combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
 
     # perform the merge
-    comb_matrix<- merge(data.frame(matrix1), data.frame(matrix2), by="row.names", all=TRUE)
-    if(func_debug==TRUE){
-        print("Made it here (3.6.1)")
-        print(paste("MATRIX_1", dim(matrix1)))
-        print(paste("MATRIX_2",dim(matrix2)))
-        print(paste("MATRIX_C",dim(comb_matrix)))
-        #print(colnames(matrix1))
-        #print(colnames(matrix2))
-        matrix3 <<- comb_matrix
-    }
+    comb_matrix<- merge(data.frame(matrix1), data.frame(matrix2), by="row.names", all=TRUE, sort=FALSE) # column ordering ("sort") is controlled by wrapper options
     
     # undo garbage formatting that merge introduces
     rownames(comb_matrix) <- comb_matrix$Row.names
     comb_matrix$Row.names <- NULL
 
-    matrix4 <<- comb_matrix
-
-    #if(func_debug==TRUE){print(paste("MATRIX DIM:", dim(comb_matrix)))}
-    colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
-    #if(func_debug==TRUE){print("Made it here (3.6.2)")}
+    #colnames(comb_matrix) <- c(colnames(matrix1), colnames(matrix2))
     
     # order columns
     if( func_order_rows==TRUE){
         ordered_rownames <- order(rownames(comb_matrix))
         comb_matrix <- comb_matrix[ordered_rownames,]
     }
-    #if(func_debug==TRUE){print("Made it here (3.6.3)")}
-
+    
     # order rows
     if( func_order_columns==TRUE){
         ordered_colnames <- order(colnames(comb_matrix))
         comb_matrix <- comb_matrix[,ordered_colnames]
     }
-    #if(func_debug==TRUE){print("Made it here (3.6.4)")}
-
-    #if(func_debug==TRUE){ matrix5 <<- comb_matrix }
-
+    
     comb_matrix <- as.matrix(comb_matrix)
     
     return(comb_matrix)
@@ -669,6 +652,8 @@ multi_analysis_wrapper <- function(
     # import the list of projects
     if( UUID_list_is_file ){
         projects <- scan(file=project_list, what="character")
+    }else{
+        projects <- project_list
     }
 
     # main loop - iterate through each of the projects
