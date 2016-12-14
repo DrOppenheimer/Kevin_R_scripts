@@ -655,11 +655,12 @@ multi_analysis_wrapper <- function(
     # create a timestamp
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
-   # create the log file
+    # create the log file
+    main_dir <- getwd()
     if( output_include_timestamp==TRUE ){
-        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
+        log_filename <- paste0(main_dir, "/", output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
     }else{
-        log_filename <- paste0(output_filename_prefix,".", output_log_extension)
+        log_filename <- paste0(main_dir, "/", output_filename_prefix,".", output_log_extension)
     }
 
     write("Begin log:", file=log_filename, append=FALSE)
@@ -677,7 +678,7 @@ multi_analysis_wrapper <- function(
         write(paste0("Starting to process: ", project), file=log_filename, append=TRUE)
 
         # create a directory for each project if that option is selected
-        main_dir <- getwd()
+        #main_dir <- getwd()
         if( create_directory_per_project==TRUE ){
             if( debug==TRUE ){
                 print(paste0("main_dir :: ", main_dir))
