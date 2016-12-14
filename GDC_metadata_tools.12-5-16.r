@@ -647,6 +647,7 @@ multi_analysis_wrapper <- function(
     UUID_list_is_file=TRUE, 
     create_directory_per_project=TRUE,
     debug=FALSE,
+    output_filename_prefix="my_log",
     output_log_extension="log",
     output_include_timestamp=FALSE
 )
