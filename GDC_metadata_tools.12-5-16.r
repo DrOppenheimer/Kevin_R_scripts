@@ -891,16 +891,16 @@ calc_expression_ratios <- function(
 
         if(debug==TRUE){print(paste0(stat_file))}
 
-        ## # a little bit of debugging
+        ## # a little bit of hacky debugging
         ## # die if the metadata does not contain the numerator column
         if( ( numerator_column %in% colnames(stat_data) == FALSE ) ){
-            error_string <- paste0("The numerator field : ( ", numerator_column, " ) is not in file : (", stat_file,")")
+            error_string <- paste0("The numerator field : ( ", numerator_column, " ) is not in file : ( ", stat_file," )")
             write(error_string, file=output_log_filename, append=TRUE)
             stop(error_string)
         }
         ## # die if the metadata does not contain the denominator column
         if( ( denominator_column %in% colnames(stat_data) == FALSE ) ){
-            error_string <- paste0("The numerator field : ( ", denominator_column, " ) is not in file : (", stat_file,")")
+            error_string <- paste0("The numerator field : ( ", denominator_column, " ) is not in file : ( ", stat_file, " )")
             write(error_string, file=output_log_filename, append=TRUE)
             stop(error_string)
         }
