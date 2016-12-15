@@ -542,7 +542,7 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
     output_metadata_extension="SUBSELECTED.METAdata.txt",
     output_UUID_prefix= "my_uuid_list",
     output_UUID_extension= "SUBSELECTED.UUID_list.txt",
-   # output_log_extension="log",
+    output_log_extension="log",
     output_include_timestamp=FALSE,
     debug=FALSE
 ){
@@ -583,6 +583,13 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
         output_UUID_list <- paste0( output_UUID_prefix, ".", output_UUID_extension)
     }
 
+    # create log filename
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0( output_UUID_prefix, ".", my_timestamp, ".", output_log_extension)
+    }else{
+        log_filename <- paste0( output_UUID_prefix, ".", output_log_extension)
+    }
+
     # create default filename for outout metadata
     if( output_include_timestamp==TRUE ){
         output_metadata <- paste0( output_metadata_prefix, ".", my_timestamp, ".", output_metadata_extension)
@@ -601,43 +608,47 @@ get_UUIDS_and_metadata_for_repeat_cases <- function(
     duplicated_cases_bool <- duplicated(my_metadata[ ,'hits.cases.case_id' ])
     duplicated_case_ids <- unique(my_metadata[ duplicated_cases_bool==TRUE, 'hits.cases.case_id' ])
 
-    row_names <- vector(mode="character")
-    subset_metadata_matrix <- matrix()
-    first_case=TRUE
-    for( i in 1:nrow(my_metadata) ){
-        if( my_metadata[i,'hits.cases.case_id'] %in% duplicated_case_ids ){
-            if ( first_case==TRUE ){
-                subset_metadata_matrix <- my_metadata[i,]
-                if(debug==TRUE){TEST.first_subset <<- subset_metadata_matrix}
-                row_names <- rownames(my_metadata)[i]
-                first_case=FALSE
-            }else{
-                subset_metadata_matrix <- rbind( subset_metadata_matrix, my_metadata[i,] )
-                if(debug==TRUE){TEST.subset_metadata_matrix <<- subset_metadata_matrix}
-                row_names <- c( row_names, rownames(my_metadata)[i])
+    if ( length(duplicated_case_ids)==0 ){
+        write("There are no cases with paired data in this project", file=log_filename)
+    }else{
+
+        row_names <- vector(mode="character")
+        subset_metadata_matrix <- matrix()
+        first_case=TRUE
+        for( i in 1:nrow(my_metadata) ){
+            if( my_metadata[i,'hits.cases.case_id'] %in% duplicated_case_ids ){
+                if ( first_case==TRUE ){
+                    subset_metadata_matrix <- my_metadata[i,]
+                    if(debug==TRUE){TEST.first_subset <<- subset_metadata_matrix}
+                    row_names <- rownames(my_metadata)[i]
+                    first_case=FALSE
+                }else{
+                    subset_metadata_matrix <- rbind( subset_metadata_matrix, my_metadata[i,] )
+                    if(debug==TRUE){TEST.subset_metadata_matrix <<- subset_metadata_matrix}
+                    row_names <- c( row_names, rownames(my_metadata)[i])
+                }
             }
         }
-    }
-    rownames( subset_metadata_matrix ) <- row_names
-
-    ## # order columns
-    ## ordered_colnames <- order(colnames(subset_metadata_matrix))
-    ## subset_metadata_matrix <- subset_metadata_matrix[,ordered_colnames]
+        rownames( subset_metadata_matrix ) <- row_names
         
-    # order rows
-    ordered_rows <- order(subset_metadata_matrix[,'hits.cases.case_id'])
-    subset_metadata_matrix <- subset_metadata_matrix[ordered_rows,]
-
-    # export metadata matrix and UUID list as separate files (for use with other tools)
-    export_data(subset_metadata_matrix,output_metadata)
+        ## # order columns
+        ## ordered_colnames <- order(colnames(subset_metadata_matrix))
+        ## subset_metadata_matrix <- subset_metadata_matrix[,ordered_colnames]
+        
+        ## order rows
+        ordered_rows <- order(subset_metadata_matrix[,'hits.cases.case_id'])
+        subset_metadata_matrix <- subset_metadata_matrix[ordered_rows,]
+        
+        ## export metadata matrix and UUID list as separate files (for use with other tools)
+        export_data(subset_metadata_matrix,output_metadata)
     
-    duplicated_cases_UUIDs <- as.list( subset_metadata_matrix[,'hits.file_id'] )
-    duplicated_cases_UUIDs <- unlist(unname(duplicated_cases_UUIDs))
-    export_UUIDs(duplicated_cases_UUIDs,output_UUID_list)
+        duplicated_cases_UUIDs <- as.list( subset_metadata_matrix[,'hits.file_id'] )
+        duplicated_cases_UUIDs <- unlist(unname(duplicated_cases_UUIDs))
+        export_UUIDs(duplicated_cases_UUIDs,output_UUID_list)
+        
+    }
 
 }
-
-
 
 
 
@@ -723,7 +734,6 @@ multi_analysis_wrapper <- function(
                 metadata_table=metadata_filename,
                 output_metadata_prefix=project,
                 output_UUID_prefix=project,
-                
             )
             subselected_UUID_list_filename <- paste0(project, ".SUBSELECTED.UUID_list.txt")
             subselected_metadata_filename <- paste0(project, ".SUBSELECTED.METAdata.txt")
