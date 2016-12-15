@@ -967,7 +967,7 @@ calc_expression_ratios <- function(
     ## # calculate var for each row for possible filtering
     row_var <- vector()
     for( i in 1:nrow( output_matrix ) ){
-        row_var <- c(row_var, var(output_matrix[i,]))
+        row_var <- c(row_var, var(as.numeric(output_matrix[i,])))
     }
     row_var <- as.numeric(row_var)
     
