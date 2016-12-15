@@ -838,7 +838,7 @@ calc_expression_ratios <- function(
     }
 
     # function to combin columns into a matrix ( robust with respect to data type in the matrix (i.e. supports character, numerical, combination ... ) )
-     <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
+    combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
         # perform the merge
         comb_matrix<- merge(data.frame(matrix1), data.frame(matrix2), by="row.names", all=TRUE, sort=FALSE) # column ordering ("sort") is controlled by wrapper options
         # undo garbage formatting that merge introduces
