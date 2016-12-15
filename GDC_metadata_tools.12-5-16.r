@@ -702,7 +702,7 @@ multi_analysis_wrapper <- function(
         if( length(my_UUID_list != 0) ){
             write(paste0("UUID list is longer than 0, proceeding"), file=log_filename, append=TRUE)
         
-        ### use the UUIDs to get the abundance data
+            ### use the UUIDs to get the abundance data
             download_and_merge_data_from_UUID(
                 UUID_list=UUID_list_filename,
                 output_filename_prefix=project
@@ -710,7 +710,7 @@ multi_analysis_wrapper <- function(
             data_filename <- paste0(project, ".DATA.txt")
             write(paste0("Downloaded DATA"), file=log_filename, append=TRUE)
 
-        ### use the UUIDs to get the corresponding metadata
+            ### use the UUIDs to get the corresponding metadata
             download_and_merge_metadata_from_UUID(
                 UUID_list=UUID_list_filename,
                 output_filename_prefix=project
@@ -718,7 +718,7 @@ multi_analysis_wrapper <- function(
             metadata_filename <- paste0(project, ".METAdata.txt")
             write(paste0("Downloaded METAdata"), file=log_filename, append=TRUE)
 
-        ### create a subselected metadata file and list of UUIDs that correspond to the cases with more than one file (e.g. cancer(s) vs normal(s))
+            ### create a subselected metadata file and list of UUIDs that correspond to the cases with more than one file (e.g. cancer(s) vs normal(s))
             get_UUIDS_and_metadata_for_repeat_cases(
                 metadata_table=metadata_filename,
                 output_metadata_prefix=project,
@@ -729,7 +729,7 @@ multi_analysis_wrapper <- function(
             subselected_metadata_filename <- paste0(project, ".SUBSELECTED.METAdata.txt")
             write(paste0("Got susbselected UUID list and METAdata"), file=log_filename, append=TRUE)
             
-        ### download data for the subselected metadata and UUID list
+            ### download data for the subselected metadata and UUID list
             download_and_merge_data_from_UUID(
                 UUID_list=subselected_UUID_list_filename,
                 output_filename_prefix= paste0(project, ".SUBSELECTED")
@@ -737,12 +737,12 @@ multi_analysis_wrapper <- function(
             subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt")
             write(paste0("Got subselected DATA"), file=log_filename, append=TRUE)
 
-        ### standard preprocessing to remove low abudance count data and normalized with DESeq
+            ### standard preprocessing to remove low abudance count data and normalized with DESeq
             preprocessing_tool(data_in=subselected_data_filename)
             preprocessed_subselected_data_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt")
             write(paste0("Performed preprocessing"), file=log_filename, append=TRUE)
             
-        ### stats (KW - as most have more than two groups, one normal and 1-3 cancer)
+            ### stats (KW - as most have more than two groups, one normal and 1-3 cancer)
             calc_stats(
                 data_table=preprocessed_subselected_data_filename,
                 metadata_table=subselected_metadata_filename,
@@ -751,17 +751,17 @@ multi_analysis_wrapper <- function(
             stat_results_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.Kruskal-Wallis.hits.cases.samples.sample_type.STATS_RESULTS.txt")
             write(paste0("Performed stats"), file=log_filename, append=TRUE)
             
-        ### Calculate raw PCoA
+            ### Calculate raw PCoA
             calculate_pco(file_in=preprocessed_subselected_data_filename)
             raw_PCoA_filename <- paste0(project, ".SUBSELECTED.DATA.txt.DESeq_blind.PREPROCESSED.txt.euclidean.PCoA")
             write(paste0("Calculated raw PCoA"), file=log_filename, append=TRUE)
-        ## # static viz of PCoA
-        ##     render_calcualted_pcoa(
-        ##         PCoA_in=raw_PCoA_filename,
-        ##         metadata_table=subselected_metadata_filename,
-        ##         use_all_metadata_columns=TRUE
-        ##     )
-        ## write(paste0("Created static vizualizations of PCoA"), file=log_filename, append=TRUE)    
+            ## # static viz of PCoA
+            ##     render_calcualted_pcoa(
+            ##         PCoA_in=raw_PCoA_filename,
+            ##         metadata_table=subselected_metadata_filename,
+            ##         use_all_metadata_columns=TRUE
+            ##     )
+            ## write(paste0("Created static vizualizations of PCoA"), file=log_filename, append=TRUE)    
 
         }else{
 
