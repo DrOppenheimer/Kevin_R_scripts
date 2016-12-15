@@ -997,7 +997,7 @@ calc_expression_ratios <- function(
         }
         if( length(TEST.zero_rows_to_remove) > 0 ){
             output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
-            log_text <- paste0("INPUT HAS ( ", now(output_matrix), " ) ROWS that pass the NA filter" ) 
+            log_text <- paste0("INPUT HAS ( ", nrow(output_matrix), " ) ROWS that pass the NA filter" ) 
             write(log_text, file=output_log_filename, append=TRUE)
             print(log_text)
         }else{
