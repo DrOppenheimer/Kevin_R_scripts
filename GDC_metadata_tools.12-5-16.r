@@ -949,7 +949,7 @@ calc_expression_ratios <- function(
             }
 
         }else{
-            write(paste0("INPUT: ", stat_file, "HAS NO ROWS THAT PASS FDR_threshold ( ", FDR_threshold, " )" ), file=output_log_filename)
+            write(paste0("INPUT: ( ", stat_file, " ) HAS NO ROWS THAT PASS FDR_threshold ( ", FDR_threshold, " )" ), file=output_log_filename)
         }
         
     }
