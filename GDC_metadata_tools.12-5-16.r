@@ -868,6 +868,8 @@ calc_expression_ratios <- function(
     }else{
         output_log_filename <- output_log_file
     }
+
+    write("Start log", file=output_log_filename, append=FALSE)
     
     ## # import list of stat files
     if( list_is_file==TRUE ){
@@ -889,6 +891,20 @@ calc_expression_ratios <- function(
 
         if(debug==TRUE){print(paste0(stat_file))}
 
+        ## # a little bit of debugging
+        ## # die if the metadata does not contain the numerator column
+        if( ( numerator_column %in% colnames(stat_data) == FALSE ) ){
+            error_string <- paste0("The numerator field : ( ", numerator_column, " ) is not in file : (", stat_file,")")
+            write(error_string, file=output_log_filename, append=TRUE)
+            stop(error_string)
+        }
+        ## # die if the metadata does not contain the denominator column
+        if( ( denominator_column %in% colnames(stat_data) == FALSE ) ){
+            error_string <- paste0("The numerator field : ( ", denominator_column, " ) is not in file : (", stat_file,")")
+            write(error_string, file=output_log_filename, append=TRUE)
+            stop(error_string)
+        }
+        
         ## # calculate the ratio
         ratio_vector <- as.numeric(stat_data[ ,numerator_column ]) / as.numeric(stat_data[ ,denominator_column ])
         names(ratio_vector) <- rownames(stat_data)
