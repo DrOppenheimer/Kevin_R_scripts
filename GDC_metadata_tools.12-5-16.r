@@ -923,6 +923,8 @@ calc_expression_ratios <- function(
         ## # loop to skip sample if it contained no data that passed the FDR filter
         if( length(fdr_ratio_vector) > 0 ){
 
+            write(paste0("INPUT: ( ", stat_file, " ) HAS ( ", length(fdr_ratio_vector), " ) values that pass the FDR filter"), file=output_log_filename, append=TRUE)
+            
             ## convert vector to a matrix
             temp_matrix <- as.matrix(fdr_ratio_vector, ncol=1)
             
