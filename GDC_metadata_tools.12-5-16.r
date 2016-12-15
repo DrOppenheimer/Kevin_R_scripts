@@ -986,7 +986,7 @@ calc_expression_ratios <- function(
             print(paste0("Number rows to remove with var = 0 : ", length(zero_rows_to_remove)))
             TEST.zero_rows_to_remove <<- zero_rows_to_remove
         }
-        if( TEST.zero_rows_to_remove > 0 ){
+        if( length(TEST.zero_rows_to_remove) > 0 ){
             output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
         }
     }
