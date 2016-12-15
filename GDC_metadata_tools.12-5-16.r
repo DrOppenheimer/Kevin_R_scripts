@@ -838,7 +838,7 @@ calc_expression_ratios <- function(
     }
 
     # function to combin columns into a matrix ( robust with respect to data type in the matrix (i.e. supports character, numerical, combination ... ) )
-    combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
+     <- function(matrix1, matrix2, func_order_rows=FALSE, func_order_columns=FALSE, func_debug=FALSE){
         # perform the merge
         comb_matrix<- merge(data.frame(matrix1), data.frame(matrix2), by="row.names", all=TRUE, sort=FALSE) # column ordering ("sort") is controlled by wrapper options
         # undo garbage formatting that merge introduces
@@ -918,6 +918,7 @@ calc_expression_ratios <- function(
         # perform culling
         fdr_ratio_vector <- ratio_vector[ fdr_rows_to_remove==FALSE ] 
         if(debug==TRUE){TEST.fdr_ratio_vector <<- fdr_ratio_vector}
+        if(debug=TRUE){print(paste0("Length of FDR passing vector: ", length(fdr_ratio_vector)))}
 
         ## # loop to skip sample if it contained no data that passed the FDR filter
         if( length(fdr_ratio_vector) > 0 ){
