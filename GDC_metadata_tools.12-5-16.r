@@ -967,7 +967,7 @@ calc_expression_ratios <- function(
     ## # calculate var for each row for possible filtering
     row_var <- vector()
     for( i in 1:nrow( output_matrix ) ){
-        row_var <- c(row_var, var(as.numeric(output_matrix[i,])))
+        row_var <- c(row_var, var(as.numeric(output_matrix[i,]), na.rm=TRUE))
     }
     row_var <- as.numeric(row_var)
     
@@ -997,11 +997,11 @@ calc_expression_ratios <- function(
         }
         if( length(TEST.zero_rows_to_remove) > 0 ){
             output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
-            log_text <- paste0("INPUT: ( ", stat_file, " ) HAS ( ", now(output_matrix), " ) ROWS that pass the NA filter" ) 
+            log_text <- paste0("INPUT HAS ( ", now(output_matrix), " ) ROWS that pass the NA filter" ) 
             write(log_text, file=output_log_filename, append=TRUE)
             print(log_text)
         }else{
-            log_text <- paste0("INPUT: ( ", stat_file, " ) HAS NO ROWS that pass the NA filter" ) 
+            log_text <- paste0("INPUT HAS NO ROWS that pass the NA filter" ) 
             write(log_text, file=output_log_filename, append=TRUE)
             print(log_text)
         }
