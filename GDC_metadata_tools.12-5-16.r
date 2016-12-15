@@ -918,7 +918,7 @@ calc_expression_ratios <- function(
         # perform culling
         fdr_ratio_vector <- ratio_vector[ fdr_rows_to_remove==FALSE ] 
         if(debug==TRUE){TEST.fdr_ratio_vector <<- fdr_ratio_vector}
-        if(debug=TRUE){print(paste0("Length of FDR passing vector: ", length(fdr_ratio_vector)))}
+        if(debug==TRUE){print(paste0("Length of FDR passing vector: ", length(fdr_ratio_vector)))}
 
         ## # loop to skip sample if it contained no data that passed the FDR filter
         if( length(fdr_ratio_vector) > 0 ){
