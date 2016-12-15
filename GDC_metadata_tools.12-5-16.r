@@ -663,7 +663,7 @@ multi_analysis_wrapper <- function(
     output_include_timestamp=FALSE
 )
 {
-    # create a timestamp
+    ## # create a timestamp
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
     # create the log file
@@ -813,7 +813,8 @@ calc_expression_ratios <- function(
     remove_var_NA_rows=FALSE,
     remove_var_0_rows=FALSE,
     use_filename_prefix_as_column_header=TRUE,
-    debug=FALSE
+    debug=FALSE,
+    output_log_file="default"
 ){
 
     ### SUBS ###
@@ -856,10 +857,19 @@ calc_expression_ratios <- function(
         return(comb_matrix)
     }
     
-
     ### MAIN ###
+
+    ## # create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
     
-    ### import list of stat files
+    ## # create log file
+    if( identical(output_log_file,"default") == TRUE ){
+        output_log_filename <- paste0("calc_expression_ratios_log.", my_timestamp, ".log")
+    }else{
+        output_log_filename <- output_log_file
+    }
+    
+    ## # import list of stat files
     if( list_is_file==TRUE ){
         stat_files <- scan(file=list_of_stats_files, what="character")
     }else{
@@ -874,108 +884,113 @@ calc_expression_ratios <- function(
     
     for( stat_file in stat_files ){
 
-        # import stat data from single file
+        ## # import stat data from single file
         stat_data <- import_metadata( stat_file, my_header=TRUE )
 
         if(debug==TRUE){print(paste0(stat_file))}
 
-        # calculate the ratio
+        ## # calculate the ratio
         ratio_vector <- as.numeric(stat_data[ ,numerator_column ]) / as.numeric(stat_data[ ,denominator_column ])
         names(ratio_vector) <- rownames(stat_data)
         if(debug==TRUE){TEST.ratio_vector <<- ratio_vector}
 
-        # NOT OPTIONAL - remove rows that don't meet the FDR filter
-        # determine the values to cull (via FDR threshold)
+        ## # NOT OPTIONAL - remove rows that don't meet the FDR filter
+        ## # determine the values to cull (via FDR threshold)
         fdr_rows_to_remove <-  as.numeric(stat_data[ ,fdr_column]) > FDR_threshold
         # perform culling
         fdr_ratio_vector <- ratio_vector[ fdr_rows_to_remove==FALSE ] 
         if(debug==TRUE){TEST.fdr_ratio_vector <<- fdr_ratio_vector}
-        
-        # convert vector to a matrix
-        temp_matrix <- as.matrix(fdr_ratio_vector, ncol=1)
-    
-        if( first_file==TRUE ){
-            # start the output matrix
-            output_matrix <- temp_matrix
-            # start the vector with output column names
-            if( use_filename_prefix_as_column_header==TRUE ){
-                filename_prefix <- strsplit(stat_file, split="\\.")[[1]][1]
-                output_col_names <- filename_prefix
-            }else{
-                output_col_names <- stat_file
-            }
-            first_file=FALSE
-        }else{
-            # append output matrix
-            output_matrix <- combine_matrices_by_column(output_matrix, temp_matrix)
-            # append output matrix column names
-            if( use_filename_prefix_as_column_header==TRUE ){
-                filename_prefix <- strsplit(stat_file, split="\\.")[[1]][1]
-                output_col_names <- c(output_col_names, filename_prefix)
-            }else{
-                output_col_names <- c(output_col_names, stat_file)
-            }
-        }
 
+        ## # loop to skip sample if it contained no data that passed the FDR filter
+        if( length(fdr_ratio_vector) > 0 ){
+
+            ## convert vector to a matrix
+            temp_matrix <- as.matrix(fdr_ratio_vector, ncol=1)
+            
+            if( first_file==TRUE ){
+                ## # start the output matrix
+                output_matrix <- temp_matrix
+                ## # start the vector with output column names
+                if( use_filename_prefix_as_column_header==TRUE ){
+                    filename_prefix <- strsplit(stat_file, split="\\.")[[1]][1]
+                    output_col_names <- filename_prefix
+                }else{
+                    output_col_names <- stat_file
+                }
+                first_file=FALSE
+            }else{
+                ## # append output matrix
+                output_matrix <- combine_matrices_by_column(output_matrix, temp_matrix)
+                ## # append output matrix column names
+                if( use_filename_prefix_as_column_header==TRUE ){
+                    filename_prefix <- strsplit(stat_file, split="\\.")[[1]][1]
+                    output_col_names <- c(output_col_names, filename_prefix)
+                }else{
+                    output_col_names <- c(output_col_names, stat_file)
+                }
+            }
+
+        }else{
+            write(paste0("INPUT: ", stat_file, "HAS NO ROWS THAT PASS FDR_threshold ( ", FDR_threshold, " )" ), file=output_log_filename)
+        }
+        
     }
 
-    # add column names to the output matrix
+    ## # Operations performed on the complete output matrix
+        
+    ## # add column names to the output matrix
     colnames( output_matrix ) <- output_col_names
-
+    
     if( debug==TRUE ){ TEST.output_matrix <<- output_matrix}
-
-    # calculate var for each row for possible filtering
+    
+    ## # calculate var for each row for possible filtering
     row_var <- vector()
     for( i in 1:nrow( output_matrix ) ){
         row_var <- c(row_var, var(output_matrix[i,]))
     }
     row_var <- as.numeric(row_var)
-
+    
     if(debug==TRUE){TEST.row_var.raw <<- row_var}
     
-    # (optional) remove rows with var = na
+    ## # (optional) remove rows with var = na
     if( remove_var_NA_rows==TRUE ){
         na_rows_to_remove <-  is.na( row_var )
-        # perform culling
+        ## # perform culling
         output_matrix <- output_matrix[ na_rows_to_remove==FALSE, ] 
-        # update row_var accordingly
+        ## # update row_var accordingly
         row_var <- row_var[ na_rows_to_remove==FALSE ]
     }
-
+    
     if(debug==TRUE){TEST.row_var.sans_na <<- row_var}
     
-    # (optional) remove rows with var = 0
+    ## # (optional) remove rows with var = 0
     if( remove_var_0_rows==TRUE ){
-        ## # recalculate var for edited data if na's were removed above
-        ## if( remove_var_NA_rows==TRUE ){
-        ##     row_var <- vector()
-        ##     for( i in 1:nrow( output_matrix ) ){
-        ##         row_var <- c(row_var, var(output_matrix[i,]))
-        ##     }
-        ## }
-        
         zero_rows_to_remove <- row_var==0
+        if(debug==TRUE){
+            print(paste0("Number rows to remove with var = 1 : ", length(zero_rows_to_remove)))
+            TEST.zero_rows_to_remove <<- zero_rows_to_remove
+        }
         output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
     }
-    
-    # order columns
+   
+    ## # order columns
     ordered_colnames <- order(colnames(output_matrix))
     output_matrix <- output_matrix[,ordered_colnames]
-        
-    # order rows
+    
+    ## # order rows
     ordered_rownames <- order(rownames(output_matrix))
     output_matrix <- output_matrix[ordered_rownames,]
-        
-    # create filename for output
+    
+    ## # create filename for output
     if( identical(output_filename, "default") ){
         output_matrix_filename <- paste0(list_of_stats_files, ".RATIOS.txt")
     }else{
         output_matrix_filename <- output_filename 
     }
     
-    # export data
+    ## # export data
     export_data( output_matrix, output_matrix_filename )
-        
+    
 }
 
 
