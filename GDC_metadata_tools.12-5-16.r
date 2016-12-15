@@ -980,7 +980,9 @@ calc_expression_ratios <- function(
         output_matrix <- output_matrix[ na_rows_to_remove==FALSE, ] 
         ## # update row_var accordingly
         row_var <- row_var[ na_rows_to_remove==FALSE ]
-        write(paste0("INPUT: ( ", stat_file, " ) HAS ( ", length(row_var), " ) ROWS that pass the NA filter" ), file=output_log_filename, append=TRUE)
+        log_text <- paste0("INPUT: ( ", stat_file, " ) HAS ( ", length(row_var), " ) ROWS that pass the NA filter" )
+        write(log_text, file=output_log_filename, append=TRUE)
+        print(log_text)
     }
     
     if(debug==TRUE){TEST.row_var.sans_na <<- row_var}
@@ -995,9 +997,13 @@ calc_expression_ratios <- function(
         }
         if( length(TEST.zero_rows_to_remove) > 0 ){
             output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
-            write(paste0("INPUT: ( ", stat_file, " ) HAS ( ", now(output_matrix), " ) ROWS that pass the NA filter" ), file=output_log_filename, append=TRUE)
+            log_text <- paste0("INPUT: ( ", stat_file, " ) HAS ( ", now(output_matrix), " ) ROWS that pass the NA filter" ) 
+            write(log_text, file=output_log_filename, append=TRUE)
+            print(log_text)
         }else{
-            write(paste0("INPUT: ( ", stat_file, " ) HAS NO ROWS that pass the NA filter" ), file=output_log_filename, append=TRUE)
+            log_text <- paste0("INPUT: ( ", stat_file, " ) HAS NO ROWS that pass the NA filter" ) 
+            write(log_text, file=output_log_filename, append=TRUE)
+            print(log_text)
         }
     }
 
