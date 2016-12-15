@@ -983,10 +983,12 @@ calc_expression_ratios <- function(
     if( remove_var_0_rows==TRUE ){
         zero_rows_to_remove <- row_var==0
         if(debug==TRUE){
-            print(paste0("Number rows to remove with var = 1 : ", length(zero_rows_to_remove)))
+            print(paste0("Number rows to remove with var = 0 : ", length(zero_rows_to_remove)))
             TEST.zero_rows_to_remove <<- zero_rows_to_remove
         }
-        output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
+        if( TEST.zero_rows_to_remove > 0 ){
+            output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
+        }
     }
    
     ## # order columns
