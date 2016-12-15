@@ -814,7 +814,9 @@ calc_expression_ratios <- function(
     remove_var_0_rows=FALSE,
     use_filename_prefix_as_column_header=TRUE,
     debug=FALSE,
-    output_log_file="default"
+    output_log_file="default",
+    sort_rows=FALSE,
+    sort_columns=FALSE
 ){
 
     ### SUBS ###
@@ -978,6 +980,7 @@ calc_expression_ratios <- function(
     }
     
     if(debug==TRUE){TEST.row_var.sans_na <<- row_var}
+    if( debug==TRUE ){ TEST.output_matrix.sans_na <<- output_matrix}
     
     ## # (optional) remove rows with var = 0
     if( remove_var_0_rows==TRUE ){
@@ -990,14 +993,20 @@ calc_expression_ratios <- function(
             output_matrix <- output_matrix[ zero_rows_to_remove==FALSE, ]
         }
     }
-   
+
+    if( debug==TRUE ){ TEST.output_matrix.sans_na.sans_0 <<- output_matrix}
+    
     ## # order columns
-    ordered_colnames <- order(colnames(output_matrix))
-    output_matrix <- output_matrix[,ordered_colnames]
+    if( sort_columns == TRUE){
+        ordered_colnames <- order(colnames(output_matrix))
+        output_matrix <- output_matrix[,ordered_colnames]
+    }
     
     ## # order rows
-    ordered_rownames <- order(rownames(output_matrix))
-    output_matrix <- output_matrix[ordered_rownames,]
+    if( sort_rows == TRUE){
+        ordered_rownames <- order(rownames(output_matrix))
+        output_matrix <- output_matrix[ordered_rownames,]
+    }
     
     ## # create filename for output
     if( identical(output_filename, "default") ){
