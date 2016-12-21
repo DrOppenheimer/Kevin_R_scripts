@@ -62,7 +62,7 @@ combine_matrices_by_column <- function(matrix1, matrix2, func_order_rows=FALSE, 
 
 get_project_UUIDs <- function(
     projects,
-    data_type="HTSeq - Counts",
+    data_type="HTSeq - Counts", # "Methylation Beta Value"
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
     cleanup=TRUE,
     debug=FALSE,
@@ -148,7 +148,7 @@ download_and_merge_data_from_UUID <- function(
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
     rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
-    dl_file_pattern=".htseq.counts.gz$",
+    dl_file_pattern=".htseq.counts.gz$", # .HumanMethylation450. # 
     cleanup=TRUE,
     #log="default",
     debug=FALSE,
