@@ -360,7 +360,7 @@ download_and_merge_Methylation_data_from_UUID <- function(
 
     ### SUBS ###
 
-    if( debug==TRUE ){ print("made it here (-8)")  }
+    ## ## if( debug==TRUE ){ print("made it here (-8)")  }
     
     # function to import data or metadata -- does not alter non-numerical data 
     import_metadata <- function(group_table, my_header=TRUE){ #, group_column, sample_names){
@@ -372,35 +372,35 @@ download_and_merge_Methylation_data_from_UUID <- function(
             )
         )
     }
-    if( debug==TRUE ){ print("made it here (-7)")  }
+    ## ## if( debug==TRUE ){ print("made it here (-7)")  }
     
     # function to export data
     export_data <- function(data_object, file_name){
         write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
     }
-    if( debug==TRUE ){ print("made it here (-6)")  }
+    ## ## if( debug==TRUE ){ print("made it here (-6)")  }
     
     ### MAIN ###
     
     ## create a timestamp
     my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
-    if( debug==TRUE ){ print("made it here (-5)")  }
+    ## ## if( debug==TRUE ){ print("made it here (-5)")  }
     
     ## create the log file
-    if( debug==TRUE ){ print(paste0("output_filename_prefix: ", output_filename_prefix)); print(paste0("output_log_extension: ", output_log_extension)); }
+    ## ## if( debug==TRUE ){ print(paste0("output_filename_prefix: ", output_filename_prefix)); print(paste0("output_log_extension: ", output_log_extension)); }
     if( output_include_timestamp==TRUE ){
         log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
     }else{
         log_filename <- paste0(output_filename_prefix, ".", output_log_extension)
     }
-    if( debug==TRUE ){ write("made it here (-4)", file=log_filename, append=TRUE); print("made it here (-4)")  }
+    ## ## if( debug==TRUE ){ write("made it here (-4)", file=log_filename, append=TRUE); print("made it here (-4)")  }
     
     ## make sure packages in list are installed and sourced
     for (i in package_list){
         if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
         library(i,character.only = TRUE)
     }
-    if( debug==TRUE ){ write("made it here (-3)", file=log_filename, append=TRUE); print("made it here (-3)") }
+    ## ## if( debug==TRUE ){ write("made it here (-3)", file=log_filename, append=TRUE); print("made it here (-3)") }
 
     ## get the UUID list from file or vector
     if( list_is_file==TRUE ){
@@ -410,7 +410,7 @@ download_and_merge_Methylation_data_from_UUID <- function(
         UUID_list <- list
         UUID_list_filename <- "UUID_list"
     }
-    if( debug==TRUE ){ write("made it here (-2)", file=log_filename, append=TRUE); print("made it here (-2)") }
+    ## ## if( debug==TRUE ){ write("made it here (-2)", file=log_filename, append=TRUE); print("made it here (-2)") }
     
     ## create output filename
     if( output_include_timestamp==TRUE ){
@@ -418,22 +418,22 @@ download_and_merge_Methylation_data_from_UUID <- function(
     }else{
         output_filename <- paste0( output_filename_prefix, ".", output_filename_extension)
     }
-    if( debug==TRUE ){ write("made it here (-1)", file=log_filename, append=TRUE); print("made it here (-1)") }
+    ## ## if( debug==TRUE ){ write("made it here (-1)", file=log_filename, append=TRUE); print("made it here (-1)") }
     
     ## delete any pre-exisiting count files
     write(paste0("Deleting any previous files with pattern = ", dl_file_pattern), file=log_filename, append=FALSE)
     file_list <- dir(pattern=dl_file_pattern)
-    if( debug==TRUE ){
-        write("made it here (0)", file=log_filename, append=TRUE); ; print("made it here (0)")
-        TEST.file_list <<- file_list
-    }
+    ## ## if( debug==TRUE ){
+    ## ##     write("made it here (0)", file=log_filename, append=TRUE); ; print("made it here (0)")
+    ## ##     TEST.file_list <<- file_list
+    ## ## }
     if ( length(file_list) > 0 ){
         for ( i in file_list){
             unlink( i )
         }
     }
 
-    if( debug==TRUE ){ write("made it here (1)", file=log_filename, append=TRUE); print("made it here (1)") }
+    ## ## if( debug==TRUE ){ write("made it here (1)", file=log_filename, append=TRUE); print("made it here (1)") }
     
     ## download the individual files
     elapsed_time <- tictoc::tic()
@@ -452,7 +452,7 @@ download_and_merge_Methylation_data_from_UUID <- function(
     elapsed_time <- elapsed_time$toc - elapsed_time$tic
     write(paste("Download time: ", elapsed_time), file=log_filename, append=TRUE)
 
-    if( debug==TRUE ){ write("made it here (2)", file=log_filename, append=TRUE); print("made it here (2)") }
+    ## ## if( debug==TRUE ){ write("made it here (2)", file=log_filename, append=TRUE); print("made it here (2)") }
                        
     ## merge files into a single table
     elapsed_time <- tictoc::tic()
@@ -461,34 +461,35 @@ download_and_merge_Methylation_data_from_UUID <- function(
     output_matrix <- matrix()
     column_names <- vector(mode="character")
     file_count <- 0
+    if( debug==TRUE ){ print(paste0("file :: ", file_count)) }
     ## merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
 
-    if( debug==TRUE ){ write("made it here (3)", file=log_filename, append=TRUE); print("made it here (3)") }
+    ## ## if( debug==TRUE ){ write("made it here (3)", file=log_filename, append=TRUE); print("made it here (3)") }
     
     for ( i in file_list ){
         if ( file_count==0 ){
             write(paste0("Starting merge with :: ", i), file=log_filename, append=TRUE)
             input_matrix <- import_metadata( i )
             column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
-            if( debug==TRUE ){
-                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME(s) :: ", c(average_by,extract_value)) )
-            }
+            ## ## if( debug==TRUE ){
+            ## ##     print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME(s) :: ", c(average_by,extract_value)) )
+            ## ## }
 
-            if( debug==TRUE ){ write("made it here (4)", file=log_filename, append=TRUE); print("made it here (4)") }
+            ## ## if( debug==TRUE ){ write("made it here (4)", file=log_filename, append=TRUE); print("made it here (4)") }
             
             ## extract the selected column of values (beta values by default) - also pull out colum that will be used to condense values by averaging
             subselected_input_matrix <- as.matrix(input_matrix[,c(average_by,extract_value)], ncol=1)
-            if(debug==TRUE){TEST.subselected_input_matrix <<- subselected_input_matrix}
+            ## ## if(debug==TRUE){TEST.subselected_input_matrix <<- subselected_input_matrix}
             rownames(subselected_input_matrix) <- rownames(input_matrix)
             colnames(subselected_input_matrix) <- c(average_by, extract_value)
             ## hash values that will be averaged, then average them
             sample_hash <- hash()
 
-            if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
-            if( debug==TRUE ){ write("made it here (4.1a)", file=log_filename, append=TRUE); print("made it here (4.1a)") }
+            ## ## if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
+            ## ## if( debug==TRUE ){ write("made it here (4.1a)", file=log_filename, append=TRUE); print("made it here (4.1a)") }
             
             for ( j in 1:nrow(subselected_input_matrix) ){
-                if( debug==TRUE )( print(paste0("j :: ", j)) )
+                ## ## if( debug==TRUE )( print(paste0("file :: ", file_count, " :::: j :: ", j)) )
                 ## If the key is new:
                 if ( is.null( sample_hash[[  subselected_input_matrix[j,average_by]  ]] ) ){
                     sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( subselected_input_matrix[j,extract_value] )
@@ -497,20 +498,23 @@ download_and_merge_Methylation_data_from_UUID <- function(
                     sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( sample_hash[[  subselected_input_matrix[j,average_by]  ]], subselected_input_matrix[j,extract_value] )
                 }
                 
-                if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
-                if( debug==TRUE ){ write("made it here (4.2a)", file=log_filename, append=TRUE); print("made it here (4.2a)") }
+                ## ## if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
+                ## ## if( debug==TRUE ){ write("made it here (4.2a)", file=log_filename, append=TRUE); print("made it here (4.2a)") }
             }
             averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
             rownames( averaged_values ) <- keys( sample_hash )
             colnames( averaged_values ) <- paste0( extract_value,".averaged" )
             for ( k in 1:length( keys(sample_hash) ) ){
                 averaged_values[k,] <- mean(as.numeric(sample_hash$k))
-                if( debug==TRUE ){ write("made it here (4.3a)", file=log_filename, append=TRUE); print("made it here (4.3a)") }
+                ## ## if( debug==TRUE ){ write("made it here (4.3a)", file=log_filename, append=TRUE); print("made it here (4.3a)") }
             }
             output_matrix <- averaged_values
             file_count =+ 1
+            if( debug==TRUE ){ print(paste0("file :: ", file_count)) }
             
-            if( debug==TRUE ){ write("made it here (5)", file=log_filename, append=TRUE); print("made it here (5)") }
+            
+            
+            ## ## if( debug==TRUE ){ write("made it here (5)", file=log_filename, append=TRUE); print("made it here (5)") }
             
             ## ## EXAMPLE for how I want the hash averaging to work
             ## > test_hash <- hash()
@@ -536,9 +540,9 @@ download_and_merge_Methylation_data_from_UUID <- function(
         }else{
             input_matrix <- import_metadata( i )
             column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
-            if( debug==TRUE ){
-                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
-            }
+            ## ## if( debug==TRUE ){
+            ## ##     print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
+            ## ## }
             
             ## extract the selected column of values (beta values by default) - also pull out colum that will be used to condense values by averaging
             subselected_input_matrix <- as.matrix(input_matrix[,c(average_by,extract_value)], ncol=1)
@@ -547,11 +551,11 @@ download_and_merge_Methylation_data_from_UUID <- function(
             ## hash values that will be averaged, then average them
             sample_hash <- hash()
 
-            if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
-            if( debug==TRUE ){ write("made it here (4.1b)", file=log_filename, append=TRUE); print("made it here (4.1b)") }
+            ## ## if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
+            ## ## if( debug==TRUE ){ write("made it here (4.1b)", file=log_filename, append=TRUE); print("made it here (4.1b)") }
 
             for ( j in 1:nrow(subselected_input_matrix) ){
-                if( debug==TRUE )( print(paste0("j :: ", j)) )
+                ## ## if( debug==TRUE )( print(paste0("file :: ", file_count, " :::: j :: ", j)) )
                 ## If the key is new:
                 if ( is.null( sample_hash[[  subselected_input_matrix[j,average_by]  ]] ) ){
                     sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( subselected_input_matrix[j,extract_value] )
@@ -560,8 +564,8 @@ download_and_merge_Methylation_data_from_UUID <- function(
                     sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( sample_hash[[  subselected_input_matrix[j,average_by]  ]], subselected_input_matrix[j,extract_value] )
                 }
                 
-                if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
-                if( debug==TRUE ){ write("made it here (4.2b)", file=log_filename, append=TRUE); print("made it here (4.2b)") }
+                ## ## if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
+                ## ## if( debug==TRUE ){ write("made it here (4.2b)", file=log_filename, append=TRUE); print("made it here (4.2b)") }
             }
             averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
             rownames( averaged_values ) <- keys( sample_hash )
@@ -580,14 +584,15 @@ download_and_merge_Methylation_data_from_UUID <- function(
                 write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
             }else{
                 write("rownames NOT identical", file=log_filename, append=TRUE)
-                qwrite(paste0("Merging (with combine_matrices_by_column/merge) :: ", i), file=log_filename, append=TRUE)
+                write(paste0("Merging (with combine_matrices_by_column/merge) :: ", i), file=log_filename, append=TRUE)
                 output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
                 my_dim <- dim(output_matrix)
                 write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
             }   
 
-            if( debug==TRUE ){ write("made it here (6)", file=log_filename, append=TRUE); print("made it here (6)") }
-            
+            ## ## if( debug==TRUE ){ write("made it here (6)", file=log_filename, append=TRUE); print("made it here (6)") }
+            file_count =+ 1
+            if( debug==TRUE ){ print(paste0("file :: ", file_count)) }
         }
     }
     
