@@ -150,17 +150,17 @@ get_project_UUIDs <- function(
 
 
 
-download_and_merge_data_from_UUID <- function(
+download_and_merge_RNASeq_data_from_UUID <- function(
     UUID_list,
     #output_prefix = "my_merged_DATA",
     list_is_file=TRUE,
     package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
     rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
-    dl_file_pattern=".htseq.counts.gz$", # .HumanMethylation450. # 
+    dl_file_pattern=".htseq.counts.gz$", # HumanMethylation # 
     cleanup=TRUE,
     #log="default",
     debug=FALSE,
-    output_filename_prefix= "my_data",
+    output_filename_prefix= "my_RNASeq_data",
     output_include_timestamp=FALSE,
     output_filename_extension="DATA.txt",
     output_log_extension="log"
@@ -271,6 +271,9 @@ download_and_merge_data_from_UUID <- function(
         }else{
             input_matrix <- import_metadata( i )
             column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
+            if( debug==TRUE ){
+                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
+            }
             if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE ){
                 write("rownames identical", file=log_filename, append=TRUE)
                 write(paste0("Merging (with cbind) :: ", i), file=log_filename, append=TRUE)
@@ -329,6 +332,317 @@ download_and_merge_data_from_UUID <- function(
     
 }
 
+
+
+
+
+
+
+
+
+download_and_merge_Methylation_data_from_UUID <- function(
+    UUID_list,
+    #output_prefix = "my_merged_DATA",
+    list_is_file=TRUE,
+    package_list=c("urltools","RJSONIO","RCurl", "hash", "tictoc"),
+    rows_to_remove=c("__alignment_not_unique","__ambiguous","__no_feature","__not_aligned","__too_low_aQual"),
+    dl_file_pattern="HumanMethylation", #
+    extract_value="Beta_value",
+    average_by="Gene_Symbol",
+    cleanup=TRUE,
+    #log="default",
+    debug=FALSE,
+    output_filename_prefix= "my_METHYLATION_data",
+    output_include_timestamp=FALSE,
+    output_filename_extension="DATA.txt",
+    output_log_extension="log"
+){
+
+    ### SUBS ###
+
+    if( debug==TRUE ){ print("made it here (-8)")  }
+    
+    # function to import data or metadata -- does not alter non-numerical data 
+    import_metadata <- function(group_table, my_header=TRUE){ #, group_column, sample_names){
+        metadata_matrix <- as.matrix( # Load the metadata table (same if you use one or all columns)
+            read.table(
+                file=group_table,row.names=1,header=my_header,sep="\t",
+                colClasses = "character", check.names=FALSE,
+                comment.char = "",quote="",fill=TRUE,blank.lines.skip=FALSE
+            )
+        )
+    }
+    if( debug==TRUE ){ print("made it here (-7)")  }
+    
+    # function to export data
+    export_data <- function(data_object, file_name){
+        write.table(data_object, file=file_name, sep="\t", col.names = NA, row.names = TRUE, quote = FALSE, eol="\n")
+    }
+    if( debug==TRUE ){ print("made it here (-6)")  }
+    
+    ### MAIN ###
+    
+    ## create a timestamp
+    my_timestamp <- gsub(":", "-",(gsub("__", "_", (gsub(" ", "_",date())))))
+    if( debug==TRUE ){ print("made it here (-5)")  }
+    
+    ## create the log file
+    if( debug==TRUE ){ print(paste0("output_filename_prefix: ", output_filename_prefix)); print(paste0("output_log_extension: ", output_log_extension)); }
+    if( output_include_timestamp==TRUE ){
+        log_filename <- paste0(output_filename_prefix, ".", my_timestamp ,".", output_log_extension)
+    }else{
+        log_filename <- paste0(output_filename_prefix, ".", output_log_extension)
+    }
+    if( debug==TRUE ){ write("made it here (-4)", file=log_filename, append=TRUE); print("made it here (-4)")  }
+    
+    ## make sure packages in list are installed and sourced
+    for (i in package_list){
+        if ( is.element(i, installed.packages()[,1]) == FALSE ){ install.packages(i) }
+        library(i,character.only = TRUE)
+    }
+    if( debug==TRUE ){ write("made it here (-3)", file=log_filename, append=TRUE); print("made it here (-3)") }
+
+    ## get the UUID list from file or vector
+    if( list_is_file==TRUE ){
+        UUID_list_filename <- UUID_list
+        UUID_list <- scan(file=UUID_list, what="character")
+    }else{
+        UUID_list <- list
+        UUID_list_filename <- "UUID_list"
+    }
+    if( debug==TRUE ){ write("made it here (-2)", file=log_filename, append=TRUE); print("made it here (-2)") }
+    
+    ## create output filename
+    if( output_include_timestamp==TRUE ){
+        output_filename <- paste0( output_filename_prefix, ".", my_timestamp, ".", output_filename_extension)
+    }else{
+        output_filename <- paste0( output_filename_prefix, ".", output_filename_extension)
+    }
+    if( debug==TRUE ){ write("made it here (-1)", file=log_filename, append=TRUE); print("made it here (-1)") }
+    
+    ## delete any pre-exisiting count files
+    write(paste0("Deleting any previous files with pattern = ", dl_file_pattern), file=log_filename, append=FALSE)
+    file_list <- dir(pattern=dl_file_pattern)
+    if( debug==TRUE ){
+        write("made it here (0)", file=log_filename, append=TRUE); ; print("made it here (0)")
+        TEST.file_list <<- file_list
+    }
+    if ( length(file_list) > 0 ){
+        for ( i in file_list){
+            unlink( i )
+        }
+    }
+
+    if( debug==TRUE ){ write("made it here (1)", file=log_filename, append=TRUE); print("made it here (1)") }
+    
+    ## download the individual files
+    elapsed_time <- tictoc::tic()
+    for(UUID in UUID_list) { # check this part - file returned has its own UUID - agrees for data and metadata, but is not same as UUID in list here (UUID.list)
+        if( file.exists("curl_log.txt")==TRUE ){ unlink("curl_log.txt") } 
+        system(paste("curl --remote-name --remote-header-name 'https://gdc-api.nci.nih.gov/data/", 
+                     UUID,
+                     "'",
+                     " > curl_log.txt",
+                     sep=""))
+        filename_temp <- scan(file="curl_log.txt", what="character")
+        UUID_filename <- filename_temp[5]
+        write(paste0("Done downloading file with UUID :: ", UUID, " and FILENAME :: ", UUID_filename), file=log_filename, append=TRUE)
+    }
+    elapsed_time <- tictoc::toc()
+    elapsed_time <- elapsed_time$toc - elapsed_time$tic
+    write(paste("Download time: ", elapsed_time), file=log_filename, append=TRUE)
+
+    if( debug==TRUE ){ write("made it here (2)", file=log_filename, append=TRUE); print("made it here (2)") }
+                       
+    ## merge files into a single table
+    elapsed_time <- tictoc::tic()
+    write(paste("Merging files"), file=log_filename, append=TRUE)
+    file_list <- dir(pattern=dl_file_pattern)
+    output_matrix <- matrix()
+    column_names <- vector(mode="character")
+    file_count <- 0
+    ## merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
+
+    if( debug==TRUE ){ write("made it here (3)", file=log_filename, append=TRUE); print("made it here (3)") }
+    
+    for ( i in file_list ){
+        if ( file_count==0 ){
+            write(paste0("Starting merge with :: ", i), file=log_filename, append=TRUE)
+            input_matrix <- import_metadata( i )
+            column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
+            if( debug==TRUE ){
+                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME(s) :: ", c(average_by,extract_value)) )
+            }
+
+            if( debug==TRUE ){ write("made it here (4)", file=log_filename, append=TRUE); print("made it here (4)") }
+            
+            ## extract the selected column of values (beta values by default) - also pull out colum that will be used to condense values by averaging
+            subselected_input_matrix <- as.matrix(input_matrix[,c(average_by,extract_value)], ncol=1)
+            if(debug==TRUE){TEST.subselected_input_matrix <<- subselected_input_matrix}
+            rownames(subselected_input_matrix) <- rownames(input_matrix)
+            colnames(subselected_input_matrix) <- c(average_by, extract_value)
+            ## hash values that will be averaged, then average them
+            sample_hash <- hash()
+
+            if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
+            if( debug==TRUE ){ write("made it here (4.1a)", file=log_filename, append=TRUE); print("made it here (4.1a)") }
+            
+            for ( j in 1:nrow(subselected_input_matrix) ){
+                if( debug==TRUE )( print(paste0("j :: ", j)) )
+                ## If the key is new:
+                if ( is.null( sample_hash[[  subselected_input_matrix[j,average_by]  ]] ) ){
+                    sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( subselected_input_matrix[j,extract_value] )
+                }else{
+                ## If the key is already in the hash
+                    sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( sample_hash[[  subselected_input_matrix[j,average_by]  ]], subselected_input_matrix[j,extract_value] )
+                }
+                
+                if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
+                if( debug==TRUE ){ write("made it here (4.2a)", file=log_filename, append=TRUE); print("made it here (4.2a)") }
+            }
+            averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
+            rownames( averaged_values ) <- keys( sample_hash )
+            colnames( averaged_values ) <- paste0( extract_value,".averaged" )
+            for ( k in 1:length( keys(sample_hash) ) ){
+                averaged_values[k,] <- mean(as.numeric(sample_hash$k))
+                if( debug==TRUE ){ write("made it here (4.3a)", file=log_filename, append=TRUE); print("made it here (4.3a)") }
+            }
+            output_matrix <- averaged_values
+            file_count =+ 1
+            
+            if( debug==TRUE ){ write("made it here (5)", file=log_filename, append=TRUE); print("made it here (5)") }
+            
+            ## ## EXAMPLE for how I want the hash averaging to work
+            ## > test_hash <- hash()
+            ## > for (i in 1:nrow(test3)){ test_hash[[ test3[i,2] ]] <- c( test_hash[[ test3[i,2] ]], test3[i,2]  ) }
+            ## > test_hash
+            ## <hash> containing 2 key-value pair(s).
+            ##   one : one one
+            ##   two : two
+            ## > for (i in 1:nrow(test3)){ test_hash[[ test3[i,2] ]] <- c( test_hash[[ test3[i,2] ]], test3[i,1]  ) }
+            ## > test3
+            ##     c_1 c_2  
+            ## r_1 "1" "one"
+            ## r_2 "1" "one"
+            ## r_3 "1" "two"
+            ## > test_hash <- hash()
+            ## > for (i in 1:nrow(test3)){ test_hash[[ test3[i,2] ]] <- c( test_hash[[ test3[i,2] ]], test3[i,1]  ) }
+            ## > test_hash
+            ## <hash> containing 2 key-value pair(s).
+            ##   one : 1 1
+            ##   two : 1                
+            
+            
+        }else{
+            input_matrix <- import_metadata( i )
+            column_names <- c( column_names, gsub(dl_file_pattern, "", i) )
+            if( debug==TRUE ){
+                print(paste0("FILENAME ::", i, " ___ ", "COLUMN-NAME :: ", column_names[i]) )
+            }
+            
+            ## extract the selected column of values (beta values by default) - also pull out colum that will be used to condense values by averaging
+            subselected_input_matrix <- as.matrix(input_matrix[,c(average_by,extract_value)], ncol=1)
+            rownames(subselected_input_matrix) <- rownames(input_matrix)
+            colnames(subselected_input_matrix) <- c(average_by, extract_value)
+            ## hash values that will be averaged, then average them
+            sample_hash <- hash()
+
+            if( debug==TRUE ){ TEST.sample_hash <<- sample_hash; TEST.subselected_input_matrix <<- subselected_input_matrix }
+            if( debug==TRUE ){ write("made it here (4.1b)", file=log_filename, append=TRUE); print("made it here (4.1b)") }
+
+            for ( j in 1:nrow(subselected_input_matrix) ){
+                if( debug==TRUE )( print(paste0("j :: ", j)) )
+                ## If the key is new:
+                if ( is.null( sample_hash[[  subselected_input_matrix[j,average_by]  ]] ) ){
+                    sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( subselected_input_matrix[j,extract_value] )
+                }else{
+                    ## If the key is already in the hash
+                    sample_hash[[  subselected_input_matrix[j,average_by]  ]] <- c( sample_hash[[  subselected_input_matrix[j,average_by]  ]], subselected_input_matrix[j,extract_value] )
+                }
+                
+                if( debug==TRUE ){ TEST.sample_hash <<- sample_hash }
+                if( debug==TRUE ){ write("made it here (4.2b)", file=log_filename, append=TRUE); print("made it here (4.2b)") }
+            }
+            averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
+            rownames( averaged_values ) <- keys( sample_hash )
+            colnames( averaged_values ) <- paste0( extract_value,".averaged" )
+            for ( k in 1:length( keys(sample_hash) ) ){
+                averaged_values[k,] <- mean(as.numeric(sample_hash$k))
+            }
+            
+            input_matrix <- averaged_values 
+            
+            if( identical( rownames(output_matrix),  rownames(input_matrix)) == TRUE ){
+                write("rownames identical", file=log_filename, append=TRUE)
+                write(paste0("Merging (with cbind) :: ", i), file=log_filename, append=TRUE)
+                output_matrix <- cbind(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }else{
+                write("rownames NOT identical", file=log_filename, append=TRUE)
+                qwrite(paste0("Merging (with combine_matrices_by_column/merge) :: ", i), file=log_filename, append=TRUE)
+                output_matrix <- combine_matrices_by_column(output_matrix, input_matrix)
+                my_dim <- dim(output_matrix)
+                write(paste0("output matrix dim :: ", my_dim), file=log_filename, append=TRUE)
+            }   
+
+            if( debug==TRUE ){ write("made it here (6)", file=log_filename, append=TRUE); print("made it here (6)") }
+            
+        }
+    }
+    
+    ## add the column names
+    colnames(output_matrix) <- column_names
+    
+    ## order columns
+    ordered_colnames <- order(colnames(output_matrix))
+    output_matrix <- output_matrix[,ordered_colnames]
+    
+    ## order rows
+    ordered_rownames <- order(rownames(output_matrix))
+    output_matrix <- output_matrix[ordered_rownames,]
+    
+    ## remove selected rows
+    for ( i in rows_to_remove ) {
+        output_matrix <- output_matrix[!rownames(output_matrix) %in% c(i), ]
+    }
+    
+    ## merge time (end)
+    elapsed_time <- tictoc::toc()
+    elapsed_time <- elapsed_time$toc - elapsed_time$tic
+    write(paste("Merge time: ", elapsed_time), file=log_filename, append=TRUE)
+    
+    ## export the merged data
+    export_data(output_matrix,output_filename)
+    write(paste0("Wrote files imported from ", UUID_list_filename, " and wrote them to ", output_filename), file=log_filename, append=TRUE)
+    
+    ## cleanup
+    if( cleanup==TRUE ){
+        file_list <- dir(pattern=dl_file_pattern)
+        if ( length(file_list) > 0 ){
+            for ( i in file_list){
+                unlink( i )
+            }
+        }
+        write("Performed cleanup", file=log_filename, append=TRUE)
+    }else{
+        write("Cleanup was disabled", file=log_filename, append=TRUE)
+    }
+    
+    write("DONE", file=log_filename, append=TRUE)
+    
+}
+
+
+
+
+        
+        
+        
+        
+        
+        
+        
 
 
 
