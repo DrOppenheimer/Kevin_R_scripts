@@ -462,6 +462,7 @@ download_and_merge_Methylation_data_from_UUID <- function(
     column_names <- vector(mode="character")
     file_count <- 0
     if( debug==TRUE ){ print(paste0("file :: ", file_count)) }
+    
     ## merge with "merge" (use merge function if the rownames do not match, and cbind if they do)
 
     ## ## if( debug==TRUE ){ write("made it here (3)", file=log_filename, append=TRUE); print("made it here (3)") }
@@ -503,9 +504,10 @@ download_and_merge_Methylation_data_from_UUID <- function(
             }
             averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
             rownames( averaged_values ) <- keys( sample_hash )
-            colnames( averaged_values ) <- paste0( extract_value,".averaged" )
+            #colnames( averaged_values ) <- paste0( extract_value,".averaged" )
             for ( k in 1:length( keys(sample_hash) ) ){
-                averaged_values[k,] <- mean(as.numeric(sample_hash$k))
+                my_key <- keys(sample_hash)[k]
+                averaged_values[k,] <- mean(as.numeric(sample_hash$my_key))
                 ## ## if( debug==TRUE ){ write("made it here (4.3a)", file=log_filename, append=TRUE); print("made it here (4.3a)") }
             }
             output_matrix <- averaged_values
@@ -569,9 +571,10 @@ download_and_merge_Methylation_data_from_UUID <- function(
             }
             averaged_values <- matrix( nrow=length( keys(sample_hash) ), ncol=1 )
             rownames( averaged_values ) <- keys( sample_hash )
-            colnames( averaged_values ) <- paste0( extract_value,".averaged" )
+            #colnames( averaged_values ) <- paste0( extract_value,".averaged" )
             for ( k in 1:length( keys(sample_hash) ) ){
-                averaged_values[k,] <- mean(as.numeric(sample_hash$k))
+                my_key <- keys(sample_hash)[k]
+                averaged_values[k,] <- mean(as.numeric(sample_hash$my_key))
             }
             
             input_matrix <- averaged_values 
