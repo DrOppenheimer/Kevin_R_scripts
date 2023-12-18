@@ -3,9 +3,10 @@ library(shiny)
 library(googlesheets4)
 library(DT)
 library(shinyjs)
+library(openxlsx)
 
 # Preload empty data to some objects
-wine_data <- matrix()
+wine_data <- data.frame()
 selected_data <- 0
 
 # Authenticate with Google
@@ -18,7 +19,8 @@ sheet_url <- "https://docs.google.com/spreadsheets/..."
 download_wine_data <- function(sheet_url) {
   cat("DOWNLAODING DATA FROM\n", sheet_url, "\n")
   wine_data <- read_sheet(sheet_url)
-  reformatted_wine_data <- matrix( data = NA, nrow=dim(wine_data)[1], ncol=dim(wine_data)[2] )
+  #reformatted_wine_data <- matrix( data = NA, nrow=dim(wine_data)[1], ncol=dim(wine_data)[2] )
+  reformatted_wine_data <- as.data.frame( data = NA, nrow=dim(wine_data)[1], ncol=dim(wine_data)[2] )
   for (i in 1:nrow(wine_data)){
     reformatted_wine_data[i,1] <- wine_data[[i,1]]
     reformatted_wine_data[i,2] <- wine_data[[i,2]]
@@ -50,7 +52,7 @@ print_line_number <- function() {
 }
 
 # function to upload the data
-upload_wine_data <- function(my_data = wine_data,
+upload_wine_data <- function(my_data = as.data.frame(wine_data),
                              sheet_url,
                              sheet_name = "Current Inventory") {
   cat("UPLOADING TO:\n", sheet_url, "\n")
@@ -64,6 +66,40 @@ remove_wine <- function(my_data=wine_data, row_number=1) {
   print(my_data[row_number, 8:13])
   return(my_data)
 }
+
+# function to save matrix locally as a text file
+
+
+# function to import matrix from a text file
+import_data <- function(file_name="wine_data.txt")
+{
+  data.matrix(read.table(file_name, 
+                         row.names=1, 
+                         header=TRUE, 
+                         sep="\t", 
+                         comment.char="", 
+                         quote="", 
+                         check.names=FALSE
+                         )
+              )
+  
+}
+
+# function to export matrix to a text file
+export_data <- function(matrix_object=wine_data, file_name="wine_data.txt"){
+  #matrix_object <- data.matrix(matrix_object)
+  write.table(matrix_object, 
+              file=file_name, 
+              sep="\t", 
+              col.names = NA, 
+              row.names = TRUE, 
+              quote = FALSE, 
+              eol="\n"
+              )
+}
+#export_data <- function(matrix_object, file_name="wine_data.txt"){
+#  write.xlsx(x = data.frame(matrix_object), file = file_name, asTable = FALSE)
+#}
 
 # function to edit a wine
 edit_wine <- function(my_data=wine_data,
@@ -93,7 +129,7 @@ ui <- navbarPage(
     # The buttons
     fluidRow(
       column(3,
-             actionButton("download_btn", "Download Wine", width = "100%")
+             actionButton("download_btn", "Download Wine (Googledoc)", width = "100%")
       ),
       column(3,
              actionButton("remove_btn", "Remove Wine", width = "100%")
@@ -102,7 +138,7 @@ ui <- navbarPage(
              actionButton("edit_btn", "Edit Wine", width = "100%")
       ),
       column(3,
-             actionButton("upload_btn", "Upload Wine", width = "100%")
+             actionButton("upload_btn", "Upload Wine (Googledoc)", width = "100%")
       )
     ),
     fluidRow(
@@ -125,6 +161,14 @@ ui <- navbarPage(
       column(2, textInput("vintage", "Vintage", "")),
       column(2, textInput("winetype", "wineType", "")),
       column(2, textInput("notes", "Notes", ""))
+    ),
+    fluidRow(
+      column(3,
+             actionButton("save_local_btn", "Save Wine (local)", width = "100%")
+      ),
+      column(3,
+             actionButton("open_local_btn", "Open Wine (local)", width = "100%")
+      ),
     )
   )
 )
@@ -140,7 +184,7 @@ server <- function(input, output, session) {
     # Display the first ten rows of the wine_data in a table
     output$selected_data_table <- renderDataTable({
       # Here, 'wine_data' contains the downloaded data matrix
-      datatable(wine_data[ 1:nrow(wine_data), 7:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
+      datatable(wine_data[ 1:nrow(wine_data), 6:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
     })
     # Capture the selected row information
     output$selected_row_info <- renderPrint({
@@ -148,7 +192,7 @@ server <- function(input, output, session) {
       selected_row <<- input$selected_data_table_rows_selected
       if (length(selected_row) > 0) {
         #cat("Selected Row Data:\n")
-        print(wine_data[selected_row, 7:13 ])
+        print(wine_data[selected_row, 6:13 ])
       }
     })
   })
@@ -160,7 +204,7 @@ server <- function(input, output, session) {
     wine_data <<- remove_wine(my_data=wine_data, row_number=selected_row)
     output$selected_data_table <- renderDataTable({
       # Here, 'wine_data' contains the downloaded data matrix
-      datatable(wine_data[ 1:nrow(wine_data), 7:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
+      datatable(wine_data[ 1:nrow(wine_data), 6:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
     })
   })
   
@@ -178,7 +222,7 @@ server <- function(input, output, session) {
       notes=input$notes)
     output$selected_data_table <- renderDataTable({
       # Here, 'wine_data' contains the downloaded data matrix
-      datatable(wine_data[ 1:nrow(wine_data), 7:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
+      datatable(wine_data[ 1:nrow(wine_data), 6:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
       #datatable(wine_data[1:input$rows_to_display, ], options = list(pageLength = input$rows_to_display))
     })
   })
@@ -202,6 +246,26 @@ server <- function(input, output, session) {
       updateTextInput(session, "type", value = wine_data[selected_row, 12])
       updateTextInput(session, "notes", value = wine_data[selected_row, 13])
     }
+  })
+  
+  # save wine_data locally in a text file (wine_data.txt) 
+  observeEvent(input$save_local_btn, {
+    # call function to save a local copy
+    file_name <- "/Users/kevinkeegan/Documents/GitHub/Kevin_R_scripts/wine_data.txt"
+    export_data(matrix_object=wine_data, file_name="/Users/kevinkeegan/Documents/GitHub/Kevin_R_scripts/wine_data.txt")
+    print(paste("SAVED wine_data as ", file_name))
+  })
+  
+  # load wine data from a local file
+  observeEvent(input$open_local_btn, {
+    # call function to load matrix from local data file
+    file_name <- "/Users/kevinkeegan/Documents/GitHub/Kevin_R_scripts/wine_data.txt"
+    wine_data <<- import_data(file_name)
+    output$selected_data_table <- renderDataTable({
+      # Here, 'wine_data' contains the downloaded data matrix
+      datatable(wine_data[ 1:nrow(wine_data), 6:13], selection = 'single', options = list(pageLength = 10))  # Displaying the first ten rows with the option to see more
+    })
+    print(paste("LOADED wine_data from ", file_name))   
   })
   
 }
