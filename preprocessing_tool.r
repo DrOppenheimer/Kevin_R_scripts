@@ -7,7 +7,7 @@ preprocessing_tool <- function(
                                   removeSg_valueMin     = 2, # lowest retained value (lower converted to 0)
                                   removeSg_rowMin       = 4, # lowest retained row sum (lower, row is removed)
                                   log_transform         = FALSE,
-                                  norm_method           = "DESeq_blind", #c("standardize", "quantile", "DESeq_blind", "DESeq_per_condition", "DESeq_pooled", "DESeq_pooled_CR", "none"), # USE blind if not replicates -- use pooled to get DESeq default
+                                  norm_method           = "standardize", #c("standardize", "quantile", "DESeq_blind", "DESeq_per_condition", "DESeq_pooled", "DESeq_pooled_CR", "none"), # USE blind if not replicates -- use pooled to get DESeq default
                                   pseudo_count          = 1, # has to be integer for DESeq
                                   DESeq_metadata_table  = NA, # only used if method is other than "blind"
                                   DESeq_metadata_column = 1, # only used if method is other than "blind"
@@ -17,13 +17,13 @@ preprocessing_tool <- function(
                                   DESeq_fitType         = "local",          # c( "parametric", "local" )
                                   DESeq_image           = TRUE, # create dispersion vs mean plot indicate DESeq regression
                                   scale_0_to_1          = TRUE,
-                                  produce_boxplots      = FALSE,
+                                  produce_boxplots      = TRUE,
                                   boxplots_file_out     = "default",
                                   boxplot_height_in     = "default", # 11,
                                   boxplot_width_in      = "default", #"8.5,
                                   boxplot_res_dpi       = 300,
                                   create_log            = TRUE,
-                                  debug                 = FALSE                                  
+                                  debug                 = TRUE                                  
                                   )
 
   {
@@ -35,19 +35,19 @@ preprocessing_tool <- function(
     # check for necessary packages, install if they are not there
     #require(matR) || install.packages("matR", repo="http://mcs.anl.gov/~braithwaite/R", type="source")
     #chooseCRANmirror()
-    setRepositories(ind=1:8)
+    #setRepositories(ind=1:8)
     #####source("http://bioconductor.org/biocLite.R")
     # Install packages if they are not already installed
 
-    if ( is.element("matR", installed.packages()[,1]) == FALSE ){
-        install.packages("devtools")
-        library(devtools)
-        install_github(repo="MG-RAST/matR", dependencies=FALSE, ref="early-release")
-        library(matR)
-        dependencies()
-    }
-    if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("DESeq") }
-    if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("preprocessCore") }
+    #if ( is.element("matR", installed.packages()[,1]) == FALSE ){
+    #    install.packages("devtools")
+    #    library(devtools)
+    #    install_github(repo="MG-RAST/matR", dependencies=FALSE, ref="early-release")
+    #    library(matR)
+    #    dependencies()
+    #}
+    #if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("DESeq") }
+    #if ( is.element("preprocessCore", installed.packages()[,1]) == FALSE ){ source("http://bioconductor.org/biocLite.R"); biocLite("preprocessCore") }
     #if ( is.element("RColorBrewer", installed.packages()[,1]) == FALSE ){ install.packages("RColorBrewer") }
 
                                         #require(preprocessCore) || install.packages("preprocessCore")
@@ -57,8 +57,8 @@ preprocessing_tool <- function(
     #####if ( is.element("DESeq", installed.packages()[,1]) == FALSE ){ biocLite("DESeq") }
     # (DESeq): www.ncbi.nlm.nih.gov/pubmed/20979621
 
-    library(preprocessCore)
-    library(DESeq)
+    #library(preprocessCore)
+    #library(DESeq)
     #library(RColorBrewer)
 
     ###### MAIN
